@@ -1,0 +1,65 @@
+{
+  "posts": [
+    {
+      "id": 1,
+      "title": "Mi primer post",
+      "content": "Este es el contenido de mi primer post.",
+      "author": "Usuario1",
+      "date": "2023-10-15"
+    },
+    {
+      "id": 2,
+      "title": "Cuarto post",
+      "content": "Este es el kjasfwoifuh contenido de mi tercer  post.",
+      "author": "Usuario2",
+      "date": "2023-10-16"
+    },
+    {
+      "id": 3,
+      "title": "Otro post interesante",
+      "content": "Contenido del tercer post.",
+      "author": "Usuario1",
+      "date": "2023-10-17"
+    },
+    {
+      "title": "Cuarto post",
+      "content": "Este es el contenido de mi segundo post.",
+      "author": "Usuario1",
+      "date": "2023-10-16",
+      "id": 4
+    },
+    {
+      "title": "Cuarto post",
+      "content": "Este es el contenido de mi segundo post.",
+      "author": "Usuario1",
+      "date": "2023-10-16",
+      "id": 5
+    },
+    {
+      "title": "Cuarto post",
+      "content": "Este es el kjasfwoifuh contenido de mi tercer  post.",
+      "author": "Usuario1",
+      "id": 6
+    },
+    {
+      "title": "Cuarto post",
+      "content": "Este es el kjasfwoifuh contenido de mi tercer  post.",
+      "author": "Usuario1",
+      "id": 7
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "username": "Usuario1",
+      "name": "Nombre del Usuario 1",
+      "email": "usuario1@example.com"
+    },
+    {
+      "id": 2,
+      "username": "Usuario2",
+      "name": "Nombre del Usuario 2",
+      "email": "usuario2@example.com"
+    }
+  ]
+}
