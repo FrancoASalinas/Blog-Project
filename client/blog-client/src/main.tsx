@@ -1,15 +1,14 @@
 import ReactDOM from 'react-dom/client';
-import Home from './Home.tsx';
 import './index.css';
 import {
   createBrowserRouter,
-  Route,
   createRoutesFromElements,
   RouterProvider,
 } from 'react-router-dom';
+import { routes } from './utils/routes.tsx';
 
 const router = createBrowserRouter(
-  createRoutesFromElements(<Route path='/' element={<Home />}></Route>)
+  createRoutesFromElements(routes)
 );
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
