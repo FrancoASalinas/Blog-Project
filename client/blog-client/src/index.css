@@ -2,3 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+    font-family: 'DancingScript';
+    src: url('./assets/DancingScript-Medium.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Urbanist';
+    src: url('./assets/Urbanist-Regular.ttf') format('truetype');
+}

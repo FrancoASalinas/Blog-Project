@@ -6,10 +6,14 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'dancing': 'DancingScript',
+        'urbanist': 'Urbanist',
+      },
       colors: {
-        'davys': '#545454',
-        'red': '#F87575',
-        'vista': '#91A6FF',
+        'jet': '#333333',
+        'seasalt': '#FCFAF9',
+        'argentinian': '#35A7FF',
       }
     },
   },
