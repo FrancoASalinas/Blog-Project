@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+body{
+    background-color: #FCFAF9;
+}
+
 @font-face {
     font-family: 'DancingScript';
     src: url('./assets/DancingScript-Medium.ttf') format('truetype');

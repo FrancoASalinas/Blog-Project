@@ -5,8 +5,7 @@ function App() {
   return (
     <>
       <Header/>
-      <main className='font-urbanist'>
-        
+      <main className='font-urbanist px-5'>
         <Outlet />
       </main>
     </>
