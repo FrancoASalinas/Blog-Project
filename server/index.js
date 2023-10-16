@@ -1,57 +1,37 @@
 const http = require('http');
-const fs = require('fs');
-const path = require('path');
+const { query } = require('./database.js');
 
 const PORT = 5000;
-let data = [];
-const dataPath = './data.json';
 
-if (fs.existsSync(dataPath)) {
-  const jsonData = fs.readFileSync(dataPath, 'utf-8');
-  data = JSON.parse(jsonData);
-} else {
-  console.log('no such file path found');
+const server = http.createServer();
 
-  fs.readdir('./', (err, files) => {
-    err && console.log('error reading dir: ', err);
-
-    const dirents = [];
-
-    for (const file of files) {
-      const fullPath = path.join('./', file);
-
-      if (fs.statSync(fullPath).isFile()) {
-        dirents.push(fullPath);
-      }
-
-      console.log('directory entries: ', dirents);
-    }
-  });
-}
-
-const server = http.createServer((req, res) => {
+server.on('request', async (req, res) => {
   const { method, url, headers } = req;
   const parsedURL = new URL(url, `http://${headers.host}`);
 
   if (
     method === 'GET' &&
     parsedURL.pathname === '/posts' &&
-    parsedURL.search === ''
+    !parsedURL.searchParams.get('id')
   ) {
+    const clientQuery = await query('SELECT * FROM posts');
+
     res.writeHead(200, { 'Content-type': 'application/json' });
-    res.end(JSON.stringify(data.posts));
+    res.end(JSON.stringify(clientQuery.rows));
   } else if (
     method === 'GET' &&
     parsedURL.pathname === '/posts' &&
     parsedURL.searchParams.get('id')
   ) {
     const id = Number(parsedURL.searchParams.get('id'));
-
-    const post = data.posts.find(post => post.id === id);
+    const clientQuery = await query('SELECT * FROM posts WHERE post_id=$1', [
+      id,
+    ]);
+    const post = clientQuery.rows.length === 1;
 
     if (post) {
       res.writeHead(200, { 'Content-type': 'application/json' });
-      res.end(JSON.stringify(data.posts.filter(post => post.id === id)));
+      res.end(JSON.stringify(clientQuery.rows[0]));
     } else {
       res.writeHead(404, { 'Content-type': 'text/plain' });
       res.end('Post not found or id invalid');
@@ -63,14 +43,21 @@ const server = http.createServer((req, res) => {
       body += chunk;
     });
 
-    req.on('end', () => {
+    req.on('end', async () => {
       const newPost = JSON.parse(body);
-      newPost.id = data.posts.length + 1;
-      data.posts.push(newPost);
 
-      fs.writeFileSync(dataPath, JSON.stringify(data));
-      res.writeHead(201, { 'Content-Type': 'text/plain' });
-      res.end(JSON.stringify(newPost));
+      if (newPost.content && newPost.username) {
+        const clientQuery = await query(
+          'INSERT INTO posts(post_author, post_body) VALUES($1, $2) RETURNING *',
+          [newPost.username, newPost.content]
+        );
+
+        res.writeHead(201, { 'Content-Type': 'text/plain' });
+        res.end(JSON.stringify(clientQuery.rows[0]));
+      } else {
+        res.writeHead(400, 'Bad Request');
+        res.end('There is an error on the request syntax');
+      }
     });
   } else if (
     method === 'PUT' &&
@@ -84,49 +71,26 @@ const server = http.createServer((req, res) => {
       body += chunk;
     });
 
-    const post = data.posts.find(post => post.id === id);
+    req.on('end', async () => {
+      const clientQuery = await query(
+        'UPDATE posts SET post_body=$1 WHERE post_id=$2 RETURNING *',
+        [body, id]
+      );
 
-    if (post) {
-      req.on('end', () => {
-        const title = JSON.parse(body).title;
-        const content = JSON.parse(body).content;
-
-        data.posts.map(post => {
-          if (post.id === id) {
-            post.title = title;
-            post.content = content;
-          }
-        });
-
-        fs.writeFileSync(dataPath, JSON.stringify(data));
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(data.posts.filter(post => (post.id = id)))[0];
-      });
-    } else {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Post not found or id invalid');
-    }
+      res.end(JSON.stringify(clientQuery.rows[0]));
+    });
   } else if (
     method === 'DELETE' &&
     parsedURL.pathname === '/posts' &&
     parsedURL.searchParams.get('id')
   ) {
     const id = Number(parsedURL.searchParams.get('id'));
-    const post = data.posts.find(post => post.id === id);
 
-    if (post) {
-      data.posts.filter(post => post.id !== post.id);
-      fs.writeFileSync(dataPath, JSON.parse(data));
+    await query('DELETE FROM posts WHERE post_id=$1', [id]);
 
-      res.writeHead(204, { 'Content-Type': 'application/json' });
-      res.end();
-    } else {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Post not found or id invalid');
-    }
-  }
-  {
+    res.writeHead(204, { 'Content-Type': 'application/json' });
+    res.end();
+  } else {
     res.writeHead(404, 'text/plain');
     res.end('Error: Not Found');
   }
