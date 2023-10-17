@@ -3,12 +3,13 @@
     "version": "1.0.0",
     "description": "",
     "scripts": {
-        "nodemon" : "nodemon index.js"
+        "nodemon": "nodemon index.js"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "express": "^4.18.2",
         "nodemon": "^3.0.1",
         "pg": "^8.11.3"
     }
