@@ -26,7 +26,7 @@ describe('Handlers', () => {
         });
     });
 
-    test('Login using credentials that are in the database should throw status 200', async () => {
+    test("Login using credentials that are in the database ('admin', 'admin') should throw status 200", async () => {
       await request
         .agent(app)
         .post('/login')
@@ -124,6 +124,11 @@ describe('Handlers', () => {
             const body = JSON.parse(res.text);
             expect(body.post_body).toBe(testContent);
             expect(body.post_author).toBe(username);
+
+            query('DELETE FROM posts WHERE post_body=$1 AND post_author=$2', [
+              testContent,
+              username,
+            ]);
           });
       });
     });
@@ -166,6 +171,9 @@ describe('Handlers', () => {
 
       test('Delete should delete a post', async () => {
         const post_id = 200;
+        const post_content = 'content content';
+        const post_author = 'asdkj';
+
         const { rowCount } = await query(
           'SELECT * FROM posts WHERE post_id=$1',
           [post_id]
@@ -173,18 +181,26 @@ describe('Handlers', () => {
         if (rowCount === 0) {
           await query(
             'INSERT INTO posts(post_id, post_author, post_body) VALUES($1, $2, $3)',
-            [post_id, 'asdkj', 'content content']
+            [post_id, post_author, post_content]
           );
         }
 
         const user = request.agent(app);
 
-        user
+        await user
           .post('/login')
           .send({ username: 'admin', password: 'admin' })
           .expect(200);
 
-        user.delete(`/posts/${post_id}`).expect(204);
+        user
+          .delete(`/posts/${post_id}`)
+          .expect(204)
+          .then(() => {
+            query(
+              'INSERT INTO posts(post_id, post_body, post_author) VALUES($1, $2, $3)',
+              [post_id, post_content, post_author]
+            );
+          });
       });
     });
   });
