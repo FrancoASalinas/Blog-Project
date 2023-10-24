@@ -5,14 +5,34 @@ const { query } = require('./database');
 jest.useFakeTimers();
 
 describe('Handlers', () => {
+  describe('Register', () => {
+    test('Register should throw status 200', async () => {
+      const username = 'admin';
+      await query('DELETE FROM users WHERE user_name=$1', [username]);
+
+      await request(app)
+        .post('/register')
+        .send({ username: username, password: 'admin' })
+        .expect(200);
+    });
+
+    test('Register using already taken username should throw status 409', async () => {
+      const username = 'admin';
+      await request(app)
+        .post('/register')
+        .send({ username: username, password: 'admin' })
+        .expect(409);
+    });
+  });
+
   describe("POST '/login'", () => {
-    test("Login using credentials that aren't in database should throw status 400: 'User Not Found'", async () => {
+    test("Login using credentials that aren't in database should throw status 400: 'Username or password are incorrect'", async () => {
       await request(app)
         .post('/login')
         .send({ username: 'lkefm', password: 'spoedfke3' })
         .expect(400)
         .then(response => {
-          expect(response.text).toBe('User Not Found');
+          expect(response.text).toBe('Username or password are incorrect');
         });
     });
 
@@ -27,31 +47,12 @@ describe('Handlers', () => {
     });
 
     test("Login using credentials that are in the database ('admin', 'admin') should throw status 200", async () => {
-      await request
-        .agent(app)
+      const user = request.agent(app);
+
+      user
         .post('/login')
         .send({ username: 'admin', password: 'admin' })
         .expect(200);
-    });
-
-    describe('Register', () => {
-      test('Register using already taken username should throw status 409', async () => {
-        await request(app)
-          .post('/register')
-          .send({ username: 'admin', password: 'admin' })
-          .expect(409);
-      });
-
-      test('Register should throw status 200', async () => {
-        const username = 'alksjfh';
-        await request(app)
-          .post('/register')
-          .send({ username: username, password: 'eiou784' })
-          .expect(200)
-          .then(res => {
-            query('DELETE FROM users WHERE user_name=$1', [username]);
-          });
-      });
     });
 
     describe("GET '/posts'", () => {

@@ -1,20 +1,34 @@
 const { query } = require('./database');
-const { isAuthenticated } = require('./utils/index');
+const { isAuthenticated, hashPassword, compareHash } = require('./utils/index');
 
 const loginHandler = async (req, res) => {
   const { username, password } = req.body;
 
   if (username && password) {
-    const { rows } = await query(
-      'SELECT * FROM users WHERE user_name=$1 AND user_password=$2',
-      [username, password]
-    );
+    const { rows } = await query('SELECT * FROM users WHERE user_name=$1', [
+      username,
+    ]);
 
     if (rows.length > 0) {
-      req.session.userId = rows[0].user_id;
-      res.status(200).send('Successfully authenticated');
+      
+      const hash = rows[0].user_hash;
+
+      compareHash(password, hash, (err, isSame) => {
+        if (err) {
+          console.log(err);
+          res.status(500);
+          res.end();
+        } else {
+          if (isSame) {
+            req.session.userId = rows[0].user_id;
+            res.status(200).send('Successfully authenticated');
+          } else {
+            res.status(400).send('Username or password are incorrect');
+          }
+        }
+      });
     } else {
-      res.status(400).send('User Not Found');
+      res.status(400).send('Username or password are incorrect');
     }
   } else {
     res.status(400).send('Username and password required');
@@ -36,17 +50,22 @@ const registerHandler = async (req, res) => {
       return;
     }
 
-    const insertUser = await query(
-      'INSERT INTO users(user_name, user_password) VALUES($1, $2) RETURNING *',
-      [username, password]
-    );
+    hashPassword(password, async (err, hash, salt) => {
+      if (err) {
+        console.log(err);
+        res.status(500);
+        res.end();
+      }
 
-    if (insertUser.rowCount > 0) {
-      res.status(200).send('User registered');
-    } else {
-      res.status(500);
-      res.end();
-    }
+      const insertUser = await query(
+        'INSERT INTO users(user_name, user_hash, user_salt) VALUES($1, $2, $3) RETURNING *',
+        [username, hash, salt]
+      );
+
+      if (insertUser.rowCount > 0) {
+        res.status(200).send('User registered');
+      }
+    });
   } else {
     res.status(400).send('Username and password required');
   }
