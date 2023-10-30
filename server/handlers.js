@@ -10,7 +10,6 @@ const loginHandler = async (req, res) => {
     ]);
 
     if (rows.length > 0) {
-      
       const hash = rows[0].user_hash;
 
       compareHash(password, hash, (err, isSame) => {
@@ -21,7 +20,8 @@ const loginHandler = async (req, res) => {
         } else {
           if (isSame) {
             req.session.userId = rows[0].user_id;
-            res.status(200).send('Successfully authenticated');
+            res.status(200);
+            res.end(JSON.stringify(rows[0].user_id));
           } else {
             res.status(400).send('Username or password are incorrect');
           }
@@ -63,7 +63,8 @@ const registerHandler = async (req, res) => {
       );
 
       if (insertUser.rowCount > 0) {
-        res.status(200).send('User registered');
+        res.status(200);
+        res.end();
       }
     });
   } else {
@@ -125,7 +126,7 @@ const updatePostHandler = (req, res) => {
         [body.content, id]
       );
 
-      res.end(JSON.stringify(rows[0]));
+      res.status(200).send(JSON.stringify(rows[0]));
     } else {
       res.status(400).send('There is an error on the request syntax');
     }
@@ -138,12 +139,152 @@ const deletePostHandler = async (req, res) => {
 
     await query('DELETE FROM posts WHERE post_id=$1', [id]);
 
-    res.writeHead(204, { 'Content-Type': 'application/json' });
+    res.status(204);
     res.end();
   });
 };
 
+const addComment = async (req, res) => {
+  isAuthenticated(req, res, async () => {
+    const postId = req.params.id;
+    const commentary = req.body.content;
+    const userId = req.session.userId;
+
+    if (commentary && commentary.length > 0 && postId && userId) {
+      const { rows, rowCount } = await query(
+        'INSERT INTO comments(comment_body, post_id, user_id) VALUES($1, $2, $3) RETURNING *',
+
+        [commentary, postId, userId]
+      );
+
+      if (rowCount > 0) {
+        res.status(200);
+        res.end(JSON.stringify(rows[0]));
+      } else {
+        res.status(500);
+      }
+    } else {
+      res.status(400);
+      res.end();
+    }
+  });
+};
+
+const editComment = async (req, res) => {
+  isAuthenticated(req, res, async () => {
+    const newComment = req.body.content;
+    const userId = req.session.userId;
+    const postId = req.params.id;
+    const commentId = req.params.commentId;
+
+    const { rowCount } = await query('SELECT * FROM posts WHERE post_id=$1', [
+      postId,
+    ]);
+
+    if (rowCount > 0) {
+      if (newComment && newComment.length > 0 && userId && commentId) {
+        const { rowCount, rows } = await query(
+          'SELECT * FROM comments WHERE comment_id=$1 AND post_id=$2 AND user_id=$3',
+          [commentId, postId, userId]
+        );
+
+        if (rowCount > 0) {
+          const updatedRow = await query(
+            'UPDATE comments SET comment_body=$1 WHERE comment_id=$2 RETURNING *',
+            [newComment, commentId]
+          );
+
+          res.status(200);
+          res.end(JSON.stringify(updatedRow.rows[0]));
+        } else {
+          res.status(403);
+          res.end();
+        }
+      } else {
+        res.status(400);
+        res.end();
+      }
+    } else {
+      res.status(404);
+      res.end();
+    }
+  });
+};
+
+const deleteComment = async (req, res) => {
+  isAuthenticated(req, res, async () => {
+    const commentId = req.params.commentId;
+    const postId = req.params.id;
+    const userId = req.session.userId;
+
+    const { rowCount, rows } = await query(
+      'SELECT * FROM comments WHERE post_id=$1 AND comment_id=$2',
+      [postId, commentId]
+    );
+
+    if (rowCount > 0) {
+      if (userId === rows[0].user_id) {
+        await query(
+          'DELETE FROM comments WHERE post_id=$1 AND comment_id=$2 AND user_id=$3',
+          [postId, commentId, userId]
+        );
+
+        res.status(204);
+        res.end();
+      } else {
+        res.status(403);
+        res.end();
+      }
+    } else {
+      res.status(404);
+      res.end();
+    }
+  });
+};
+
+const getComments = async (req, res) => {
+  isAuthenticated(req, res, async () => {
+    const postId = req.params.id;
+    const { rows, rowCount } = await query(
+      'SELECT * FROM comments WHERE post_id=$1',
+      [postId]
+    );
+    if (rowCount > 0) {
+      res.status(200);
+      res.end(JSON.stringify(rows));
+    } else {
+      res.status(404);
+      res.end();
+    }
+  });
+};
+
+const getSingleComment = async (req, res) => {
+  isAuthenticated(req, res, async () => {
+    const postId = req.params.id;
+    const commentId = req.params.commentId;
+
+    const { rows, rowCount } = await query(
+      'SELECT * FROM comments WHERE post_id=$1 AND comment_id=$2',
+      [postId, commentId]
+    );
+
+    if (rowCount > 0) {
+      res.status(200);
+      res.end(JSON.stringify(rows[0]));
+    } else {
+      res.status(404);
+      res.end();
+    }
+  });
+};
+
 module.exports = {
+  getSingleComment,
+  getComments,
+  deleteComment,
+  editComment,
+  addComment,
   loginHandler,
   registerHandler,
   allPostsHandler,

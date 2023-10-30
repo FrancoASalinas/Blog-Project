@@ -8,6 +8,11 @@ const {
   updatePostHandler,
   deletePostHandler,
   createPostHandler,
+  addComment,
+  editComment,
+  deleteComment,
+  getComments,
+  getSingleComment,
 } = require('./handlers.js');
 
 const app = express();
@@ -38,6 +43,21 @@ app.put('/posts/:id', updatePostHandler);
 
 //Delete a post using post_id
 app.delete('/posts/:id', deletePostHandler);
+
+//Create a comment on a post
+app.post('/posts/:id/comments', addComment);
+
+//Edit a comment
+app.put('/posts/:id/comments/:commentId', editComment);
+
+//Delete a comment
+app.delete('/posts/:id/comments/:commentId', deleteComment);
+
+//Get all comments
+app.get('/posts/:id/comments', getComments);
+
+//Get a single comment
+app.get('/posts/:id/comments/:commentId', getSingleComment);
 
 //Not Found
 app.use((req, res) => {
