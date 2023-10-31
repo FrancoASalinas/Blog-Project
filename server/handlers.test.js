@@ -394,4 +394,52 @@ describe('Handlers', () => {
       });
     });
   });
+
+  describe("Post's Likes", () => {
+    let postId;
+    test('POST /posts/:id/likes should add a like and throw status 204', async () => {
+      const user = await loggedUser();
+
+      //Create a post and retrieve post id
+      await user
+        .post('/posts')
+        .send({ content: 'test-content', author: 'admin' })
+        .expect(201)
+        .then(res => {
+          const body = JSON.parse(res.text);
+          postId = body.post_id;
+        });
+
+      //Like the post using post id
+      await user.post(`/posts/${postId}/likes`).expect(204);
+    });
+
+    test('Get /posts/:id/likes should retrieve that post likes count', async () => {
+      const user = await loggedUser();
+
+      await user
+        .get(`/posts/${postId}/likes`)
+        .expect(200)
+        .then(res => {
+          const body = JSON.parse(res.text);
+
+          expect(Number(body.count)).toBe(1);
+        });
+    });
+
+    test('POST /posts/:id/likes should delete a like if it was already liked', async () => {
+      const user = await loggedUser();
+
+      await user.post(`/posts/${postId}/likes`).expect(204);
+
+      await user
+        .get(`/posts/${postId}`)
+        .expect(200)
+        .then(async res => {
+          await query('DELETE FROM posts WHERE post_id=$1', [postId]);
+        });
+    });
+
+    
+  });
 });

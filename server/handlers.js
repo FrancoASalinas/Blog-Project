@@ -279,7 +279,65 @@ const getSingleComment = async (req, res) => {
   });
 };
 
+const likePost = async (req, res) => {
+  isAuthenticated(req, res, async () => {
+    const postId = req.params.id;
+    const userId = req.session.userId;
+
+    const { rowCount } = await query(
+      'SELECT * FROM post_likes WHERE post_id=$1 AND user_id=$2',
+      [postId, userId]
+    );
+
+    if (rowCount === 0) {
+      const { rowCount } = await query(
+        'INSERT INTO post_likes(post_id, user_id) VALUES($1, $2) RETURNING *',
+        [postId, userId]
+      );
+      if (rowCount === 1) {
+        res.status(204);
+        res.end();
+      } else {
+        res.status(500);
+        res.end();
+      }
+    } else if (rowCount === 1) {
+      const { rowCount } = await query(
+        'DELETE FROM post_likes WHERE user_id=$1 AND post_id=$2 RETURNING *',
+        [userId, postId]
+      );
+
+      if (rowCount === 1) {
+        res.status(204);
+        res.end();
+      } else {
+        res.status(500);
+        res.end();
+      }
+    } else {
+      res.status(500);
+      res.end();
+    }
+  });
+};
+
+const getPostLikes = async (req, res) => {
+  isAuthenticated(req, res, async () => {
+    const postId = req.params.id;
+
+    const { rows } = await query(
+      'SELECT COUNT(*) FROM post_likes WHERE post_id=$1',
+      [postId]
+    );
+
+    res.status(200);
+    res.end(JSON.stringify(rows[0]));
+  });
+};
+
 module.exports = {
+  getPostLikes,
+  likePost,
   getSingleComment,
   getComments,
   deleteComment,

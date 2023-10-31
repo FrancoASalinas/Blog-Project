@@ -13,6 +13,8 @@ const {
   deleteComment,
   getComments,
   getSingleComment,
+  likePost,
+  getPostLikes,
 } = require('./handlers.js');
 
 const app = express();
@@ -58,6 +60,12 @@ app.get('/posts/:id/comments', getComments);
 
 //Get a single comment
 app.get('/posts/:id/comments/:commentId', getSingleComment);
+
+//Like a post
+app.post('/posts/:id/likes', likePost);
+
+//Get post's likes
+app.get('/posts/:id/likes', getPostLikes);
 
 //Not Found
 app.use((req, res) => {
