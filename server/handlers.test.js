@@ -439,7 +439,73 @@ describe('Handlers', () => {
           await query('DELETE FROM posts WHERE post_id=$1', [postId]);
         });
     });
+  });
 
-    
+  describe('Comments likes', () => {
+    let postId;
+    let commentId;
+    test('Post /posts/:id/comments/:commentId/likes should add a like to that comment', async () => {
+      const user = await loggedUser();
+
+      //Create post
+      await user
+        .post('/posts')
+        .send({ content: 'test', author: 'admin' })
+        .expect(201)
+        .then(res => {
+          const body = JSON.parse(res.text);
+
+          postId = body.post_id;
+        });
+
+      //Add comment
+      await user
+        .post(`/posts/${postId}/comments`)
+        .send({ content: 'test-comment' })
+        .expect(200)
+        .then(res => {
+          const body = JSON.parse(res.text);
+
+          commentId = body.comment_id;
+        });
+
+      //Like a comment
+      await user
+        .post(`/posts/${postId}/comments/${commentId}/likes`)
+        .expect(204);
+    });
+
+    test('Get /posts/:id/comments/:commentId/likes should retrieve all likes', async () => {
+      const user = await loggedUser();
+
+      await user
+        .get(`/posts/${postId}/comments/${commentId}/likes`)
+        .expect(200)
+        .then(res => {
+          const body = JSON.parse(res.text);
+          expect(Number(body.count)).toBe(1);
+        });
+    });
+
+    test('Post /posts/:id/comments/:commentId/likes should delete a like if it was liked already', async () => {
+      const user = await loggedUser();
+
+      //Dislike a post
+      await user
+        .post(`/posts/${postId}/comments/${commentId}/likes`)
+        .expect(204);
+
+      //Ensure the post is disliked
+      await user
+        .get(`/posts/${postId}/comments/${commentId}/likes`)
+        .expect(200)
+        .then(res => {
+          const body = JSON.parse(res.text);
+          expect(Number(body.count)).toBe(0);
+
+          //Delete post
+          query('DELETE FROM posts WHERE post_id=$1', [postId]);
+        });
+    });
   });
 });
