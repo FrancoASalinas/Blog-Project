@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const cors = require('cors');
 const {
   loginHandler,
   registerHandler,
@@ -21,11 +22,15 @@ const {
 
 const app = express();
 
+app.use(cors())
+
+app.use(express.json());
+
+app.use(express.urlencoded({ extended: true }));
+
 app.use(
   session({ secret: 'test-secret', resave: true, saveUninitialized: false })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 //login
 app.post('/login', loginHandler);

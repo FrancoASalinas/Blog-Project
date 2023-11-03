@@ -1,5 +1,12 @@
 const { query } = require('./database');
-const { isAuthenticated, hashPassword, compareHash } = require('./utils/index');
+const {
+  isAuthenticated,
+  hashPassword,
+  compareHash,
+  validatePassword,
+  validateUsername,
+  passwordIsConfirmed,
+} = require('./utils/index');
 
 const loginHandler = async (req, res) => {
   const { username, password } = req.body;
@@ -36,25 +43,52 @@ const loginHandler = async (req, res) => {
 };
 
 const registerHandler = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, confirm_password } = await req.body;
 
-  if (username && password) {
+  if (username && password && confirm_password) {
+    const errors = {};
+    const usernameErrors = validateUsername(username);
+    const passwordErrors = validatePassword(password);
+    const confirmPasswordError = passwordIsConfirmed(
+      password,
+      confirm_password
+    );
+
+    //validate username
+    if (usernameErrors) {
+      errors.username = usernameErrors;
+    }
+
+    //validate password
+    if (passwordErrors) {
+      errors.password = passwordErrors;
+    }
+
+    //validate confirm_password
+    if (confirmPasswordError) {
+      errors.confirm_password = confirmPasswordError;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      res.status(400);
+      res.type('application/json');
+      res.send(JSON.stringify({ errors: errors }));
+    }
+
     const takenUsername = await query(
       'SELECT * FROM users WHERE user_name=$1',
       [username]
     );
 
     if (takenUsername.rowCount !== 0) {
-      res.status(409).send('Username is already taken');
+      res.status(409);
       res.end();
-      return;
     }
 
     hashPassword(password, async (err, hash, salt) => {
       if (err) {
         console.log(err);
         res.status(500);
-        res.end();
       }
 
       const insertUser = await query(
@@ -68,7 +102,8 @@ const registerHandler = async (req, res) => {
       }
     });
   } else {
-    res.status(400).send('Username and password required');
+    res.status(400);
+    res.end();
   }
 };
 

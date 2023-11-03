@@ -14,6 +14,7 @@ export default {
         'jet': '#333333',
         'seasalt': '#FCFAF9',
         'argentinian': '#35A7FF',
+        'argentinian-light': '#45B7FF'
       }
     },
   },

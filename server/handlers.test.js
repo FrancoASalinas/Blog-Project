@@ -4,8 +4,8 @@ const { query } = require('./database');
 
 jest.useFakeTimers();
 
-const loggedUserName = 'admin';
-const loggedUserPass = 'admin';
+const loggedUserName = 'admin123';
+const loggedUserPass = 'admin123';
 
 async function loggedUser() {
   const user = request.agent(app);
@@ -23,14 +23,14 @@ describe('Handlers', () => {
 
       await request(app)
         .post('/register')
-        .send({ username: loggedUserName, password: loggedUserPass })
+        .send({ username: loggedUserName, password: loggedUserPass, confirm_password: loggedUserPass })
         .expect(200);
     }, 10000);
 
     test('Register using already taken username should throw status 409', async () => {
       await request(app)
         .post('/register')
-        .send({ username: loggedUserName, password: loggedUserPass })
+        .send({ username: loggedUserName, password: loggedUserPass, confirm_password: loggedUserPass })
         .expect(409);
     });
   });
@@ -242,7 +242,7 @@ describe('Handlers', () => {
 
         await request(app)
           .post('/register')
-          .send({ username: username, password: username })
+          .send({ username: username, password: username, confirm_password: username })
           .expect(200);
 
         const user = await loggedUser();
@@ -294,7 +294,7 @@ describe('Handlers', () => {
 
         await user
           .post('/register')
-          .send({ username: username, password: username })
+          .send({ username: username, password: username, confirm_password: username })
           .expect(200);
 
         await user
