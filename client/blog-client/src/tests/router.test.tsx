@@ -6,18 +6,21 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+export const setup = (entries: string | string[], index?: number) => {
+  const user = userEvent.setup();
+
+  return{
+  user: user,
+  ...render(
+    <MemoryRouter
+      initialEntries={typeof entries === 'string' ? [entries] : entries}
+      initialIndex={index}
+    >
+      <Routes>{routes}</Routes>
+    </MemoryRouter>
+  ),
+}};
 describe('routes', () => {
-  const setup = (entries: string | string[], index?: number) => ({
-    user: userEvent.setup(),
-    ...render(
-      <MemoryRouter
-        initialEntries={typeof entries === 'string' ? [entries] : entries}
-        initialIndex={index}
-      >
-        <Routes>{routes}</Routes>
-      </MemoryRouter>
-    ),
-  });
 
   describe('Homepage', () => {
     test("'/' renders homepage and header", () => {

@@ -17,7 +17,7 @@ function RegisterForm() {
   const [inputErrors, setInputErrors] = useState<DataResponse['errors']>();
   const [serverError, setServerError] = useState<string>('');
   const [success, setSuccess] = useState(false);
-  const redirect = useNavigate()
+  const redirect = useNavigate();
 
   async function handleSubmit(e: any) {
     e.preventDefault();
@@ -63,7 +63,7 @@ function RegisterForm() {
             case 200:
               setServerError('');
               setSuccess(true);
-              redirect('success')
+              redirect('success');
           }
         } else if (Object.keys(data.errors).length > 0 && res.status === 400) {
           setInputErrors(data.errors);
@@ -77,11 +77,22 @@ function RegisterForm() {
     } else return false;
   }
 
+  const errors = {
+    isShorter: (input: string, n: number) => {
+      return input.length < n && `Input must be longer than ${n} characters`;
+    },
+    isLarger: (input: string, n: number) => {
+      return input.length > n && `Input must be shorter than ${n} characters`;
+    },
+    isInvalid: (input: string) => {
+      return !input.match(/\w/) && 'Input has invalid characters';
+    },
+  };
+
   return (
     <>
-      
-        <h2 className='text-left text-3xl mx-auto max-w-xs'>Sign up</h2>
-        <div className='bg-jet w-full h-[1px] my-1'></div>
+      <h2 className='text-left text-3xl mx-auto max-w-xs'>Sign up</h2>
+      <div className='bg-jet w-full h-[1px] my-1'></div>
       <form
         onSubmit={e => handleSubmit(e)}
         className='flex flex-col max-w-xs mx-auto justify-between'
@@ -90,7 +101,7 @@ function RegisterForm() {
           <label htmlFor='username'>Username</label>
           <input
             type='text'
-            onChange={e => setUsername(e.target.value)}
+            onChange={e => setUsername(e.target.value.trim())}
             name='username'
             id='username'
             className='outline-none p-[5px] text-xl border-jet border rounded-sm'
@@ -101,17 +112,24 @@ function RegisterForm() {
               expandList(inputErrors?.username) ? 'h-[38px]' : 'h-[14px]'
             }  mb-1 transition-all flex flex-col`}
           >
-            {typeof inputErrors?.username === 'object' &&
-              inputErrors.username.map(err => {
-                return <span className='text-xs text-red-500'>{err}</span>;
-              })}
+            {typeof inputErrors?.username === 'object'
+              ? inputErrors.username.map(err => {
+                  return <span className='text-xs text-red-500'>{err}</span>;
+                })
+              : username.length > 0 && (
+                  <span className='text-xs text-red-500'>
+                    {errors.isShorter(username, 4) ||
+                      errors.isLarger(username, 16) ||
+                      errors.isInvalid(username)}
+                  </span>
+                )}
           </ul>
         </div>
         <div className='flex flex-col gap-1'>
           <label htmlFor='password'>Password</label>
           <input
             type='password'
-            onChange={e => setPassword(e.target.value)}
+            onChange={e => setPassword(e.target.value.trim())}
             name='password'
             id='password'
             className='outline-none p-[5px] border-jet text-xl border rounded-sm'
@@ -121,10 +139,17 @@ function RegisterForm() {
               expandList(inputErrors?.password) ? 'h-[38px]' : 'h-[14px]'
             }  mb-1 transition-all flex flex-col`}
           >
-            {typeof inputErrors?.password === 'object' &&
-              inputErrors.password.map(err => {
-                return <span className='text-xs text-red-500'>{err}</span>;
-              })}
+            {typeof inputErrors?.password === 'object'
+              ? inputErrors.password.map(err => {
+                  return <span className='text-xs text-red-500'>{err}</span>;
+                })
+              : password.length > 0 && (
+                  <span className='text-xs text-red-500'>
+                    {errors.isShorter(password, 6) ||
+                      errors.isLarger(password, 20) ||
+                      errors.isInvalid(password)}
+                  </span>
+                )}
           </ul>
         </div>
         <div className='flex flex-col gap-1'>
