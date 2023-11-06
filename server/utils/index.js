@@ -9,8 +9,14 @@ const tests = {
     param.trim().length <= n
       ? null
       : `Input must be shorter than ${n} characters`,
-  validCharacters: param =>
-    param.trim().match(/\w/i) ? null : 'Input has invalid characters',
+  validCharacters: param => {
+    const trimmed = param.trim();
+    const regEx = /^[^.]([a-z]{1,}|[0-9])+[^.]$/i;
+
+    if (trimmed.length > 0) {
+      return regEx.test(trimmed) ? null : 'Input has invalid characters';
+    } else return null;
+  },
 };
 
 module.exports = {
@@ -70,5 +76,5 @@ module.exports = {
   },
 
   passwordIsConfirmed: (password, confirm) =>
-    !(password === confirm) && ['Passwords are not equal'],
+    !(password.trim() === confirm.trim()) && ['Passwords are not equal'],
 };

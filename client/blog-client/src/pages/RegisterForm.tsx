@@ -85,7 +85,9 @@ function RegisterForm() {
       return input.length > n && `Input must be shorter than ${n} characters`;
     },
     isInvalid: (input: string) => {
-      return !input.match(/\w/) && 'Input has invalid characters';
+      const regEx = /^[^.]([a-z]{1,}|[0-9])+[^.]$/i;
+
+      return !regEx.test(input) && 'Input has invalid characters';
     },
   };
 

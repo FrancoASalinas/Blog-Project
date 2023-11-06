@@ -18,19 +18,149 @@ async function loggedUser() {
 }
 describe('Handlers', () => {
   describe('Register', () => {
+    test.each([
+      [
+        ' ',
+        ' ',
+        ' ',
+        {
+          errors: {
+            username: ['Input must be larger than 4 characters'],
+            password: ['Input must be larger than 6 characters'],
+          },
+        },
+      ],
+      [
+        '     ',
+        '       ',
+        '  ',
+        {
+          errors: {
+            username: ['Input must be larger than 4 characters'],
+            password: ['Input must be larger than 6 characters'],
+          },
+        },
+      ],
+      [
+        'abc',
+        'abcd',
+        ' ',
+        {
+          errors: {
+            username: ['Input must be larger than 4 characters'],
+            password: ['Input must be larger than 6 characters'],
+            confirm_password: ['Passwords are not equal'],
+          },
+        },
+      ],
+      [
+        'abcde',
+        'abcdefg',
+        'abcdef',
+        { errors: { confirm_password: ['Passwords are not equal'] } },
+      ],
+      [
+        'abcdefasdfgrasdds',
+        'asdasdasdasdasdasdasa',
+        'asdasdasdasdasdasdasa',
+        {
+          errors: {
+            username: ['Input must be shorter than 16 characters'],
+            password: ['Input must be shorter than 20 characters'],
+          },
+        },
+      ],
+      [
+        'asd asd e',
+        'akdi o',
+        'akdi o',
+        {
+          errors: {
+            username: ['Input has invalid characters'],
+            password: ['Input has invalid characters'],
+          },
+        },
+      ],
+      [
+        '_____',
+        '_______',
+        '_______',
+        {
+          errors: {
+            username: ['Input has invalid characters'],
+            password: ['Input has invalid characters'],
+          },
+        },
+      ],
+      [
+        '.franco',
+        'franco.',
+        'franco.',
+        {
+          errors: {
+            username: ['Input has invalid characters'],
+            password: ['Input has invalid characters'],
+          },
+        },
+      ],
+      [
+        '-----',
+        '-------',
+        '-------',
+        {
+          errors: {
+            username: ['Input has invalid characters'],
+            password: ['Input has invalid characters'],
+          },
+        },
+      ],
+    ])(
+      'username: %s, password: %s and confirm password: %s should throw status 400 and response: %o',
+      async (username, password, confirmPassword, response) => {
+        await request
+          .agent(app)
+          .post('/register')
+          .send({
+            username: username,
+            password: password,
+            confirm_password: confirmPassword,
+          })
+          .expect(400)
+          .then(res => {
+            const body = res.body;
+            expect(body.errors.username).toStrictEqual(
+              response.errors.username
+            );
+            expect(body.errors.password).toStrictEqual(
+              response.errors.password
+            );
+            expect(body.errors.confirm_password).toStrictEqual(
+              response.errors.confirm_password
+            );
+          });
+      }
+    );
     test('Register should throw status 200', async () => {
       await query('DELETE FROM users WHERE user_name=$1', [loggedUserName]);
 
       await request(app)
         .post('/register')
-        .send({ username: loggedUserName, password: loggedUserPass, confirm_password: loggedUserPass })
+        .send({
+          username: loggedUserName,
+          password: loggedUserPass,
+          confirm_password: loggedUserPass,
+        })
         .expect(200);
     }, 10000);
 
     test('Register using already taken username should throw status 409', async () => {
       await request(app)
         .post('/register')
-        .send({ username: loggedUserName, password: loggedUserPass, confirm_password: loggedUserPass })
+        .send({
+          username: loggedUserName,
+          password: loggedUserPass,
+          confirm_password: loggedUserPass,
+        })
         .expect(409);
     });
   });
@@ -127,7 +257,7 @@ describe('Handlers', () => {
 
     describe("PUT 'posts/:id'", () => {
       test('Put without authentication should throw status 401', async () => {
-        request
+        await request
           .agent(app)
           .put('/posts/1')
           .send({ content: 'ksjgn' })
@@ -193,8 +323,8 @@ describe('Handlers', () => {
     const commentUrl = allCommentsUrl + '/1';
 
     describe("POST 'posts/:id/comments'", () => {
-      test('Post without authentication should throw status 401', () => {
-        request(app)
+      test('Post without authentication should throw status 401', async () => {
+        await request(app)
           .post(allCommentsUrl)
           .send({ content: comment })
           .expect(401);
@@ -231,8 +361,11 @@ describe('Handlers', () => {
     });
 
     describe("PUT 'posts/:id/comments/:commentId'", () => {
-      test('Put without authentication should throw status 401', () => {
-        request(app).put(commentUrl).send({ content: comment }).expect(401);
+      test('Put without authentication should throw status 401', async () => {
+        await request(app)
+          .put(commentUrl)
+          .send({ content: comment })
+          .expect(401);
       });
 
       test('Put without being the author should throw status 403', async () => {
@@ -242,7 +375,11 @@ describe('Handlers', () => {
 
         await request(app)
           .post('/register')
-          .send({ username: username, password: username, confirm_password: username })
+          .send({
+            username: username,
+            password: username,
+            confirm_password: username,
+          })
           .expect(200);
 
         const user = await loggedUser();
@@ -281,7 +418,10 @@ describe('Handlers', () => {
 
     describe("DELETE 'posts/:id/comments/:commentId'", () => {
       test('Delete without authentication should throw status 401', async () => {
-        request(app).delete(commentUrl).send({ content: comment }).expect(401);
+        await request(app)
+          .delete(commentUrl)
+          .send({ content: comment })
+          .expect(401);
       });
 
       test('Delete without being the comment author should throw status 403', async () => {
@@ -294,7 +434,11 @@ describe('Handlers', () => {
 
         await user
           .post('/register')
-          .send({ username: username, password: username, confirm_password: username })
+          .send({
+            username: username,
+            password: username,
+            confirm_password: username,
+          })
           .expect(200);
 
         await user
@@ -338,7 +482,10 @@ describe('Handlers', () => {
 
     describe("GET 'posts/:id/comments/'", () => {
       test('Get without authentication should throw status 401', async () => {
-        request(app).get(allCommentsUrl).send({ content: comment }).expect(401);
+        await request(app)
+          .get(allCommentsUrl)
+          .send({ content: comment })
+          .expect(401);
       });
 
       test('Get should get all comments and throw status 200', async () => {
