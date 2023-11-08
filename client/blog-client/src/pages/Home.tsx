@@ -17,7 +17,7 @@ function Home() {
         <Link to='/register'>
           <ArgentinianButton text='Register' />
         </Link>
-        <Link to='/'>
+        <Link to='/login'>
           <ArgentinianButton text='Sign In' />
         </Link>
       </div>

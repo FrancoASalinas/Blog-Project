@@ -28,17 +28,22 @@ const loginHandler = async (req, res) => {
           if (isSame) {
             req.session.userId = rows[0].user_id;
             res.status(200);
-            res.end(JSON.stringify(rows[0].user_id));
+            res.end();
           } else {
-            res.status(400).send('Username or password are incorrect');
+            res.type('application/json')
+            res
+              .status(400)
+              .send({ errors: ['Username or password are incorrect'] });
           }
         }
       });
     } else {
-      res.status(400).send('Username or password are incorrect');
+      res.type('application/json')
+      res.status(400).send({ errors: ['Username or password are incorrect'] });
     }
   } else {
-    res.status(400).send('Username and password required');
+    res.type('application/json')
+    res.status(400).send({ errors: ['Username and password required'] });
   }
 };
 

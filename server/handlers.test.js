@@ -172,17 +172,34 @@ describe('Handlers', () => {
         .send({ username: 'lkefm', password: 'spoedfke3' })
         .expect(400)
         .then(response => {
-          expect(response.text).toBe('Username or password are incorrect');
+          expect(response.body).toStrictEqual({
+            errors: ['Username or password are incorrect'],
+          });
+        });
+    });
+
+    test("Login using wrong password should throw status 400: 'Username or password are incorrect'", async () => {
+      await request(app)
+        .post('/login')
+        .send({
+          username: loggedUserName,
+          password: loggedUserPass + 'asdikolj',
+        })
+        .expect(400)
+        .then(res => {
+          expect(res.body).toStrictEqual({
+            errors: ['Username or password are incorrect'],
+          });
         });
     });
 
     test("Login without sending username or password should throw status 400: 'Username and password required'", async () => {
       await request(app)
         .post('/login')
-        .send('')
+        .send(' ')
         .expect(400)
         .then(res => {
-          expect(res.text).toBe('Username and password required');
+          expect(res.body).toStrictEqual({ errors: ['Username and password required'] });
         });
     });
 

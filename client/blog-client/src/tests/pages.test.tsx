@@ -10,7 +10,7 @@ describe('Register page', () => {
   it('should show password label', async () => {
     setup('/register');
 
-    expect(screen.getByLabelText(/password/i));
+    expect(screen.getByLabelText(/^password$/i));
   });
   it('should show confirm password label', async () => {
     setup('/register');
@@ -50,8 +50,16 @@ describe('Register page', () => {
   describe('Password Input', () => {
     test.each([
       ['abc', /input must be longer than 6 characters/i, true],
-      ['abcderfgthngfrthgasad', /input must be shorter than 20 characters/i, true],
-      ['abcderfgthngfrthsawd', /input must be shorter than 20 characters/i, false],
+      [
+        'abcderfgthngfrthgasad',
+        /input must be shorter than 20 characters/i,
+        true,
+      ],
+      [
+        'abcderfgthngfrthsawd',
+        /input must be shorter than 20 characters/i,
+        false,
+      ],
       ['abcdef', /Input must be longer than 6 characters/i, false],
       ['/&·$)(', /input has invalid characters/i, true],
       ['  ', /Input must be longer than 6 characters/i, false],
@@ -61,7 +69,7 @@ describe('Register page', () => {
       "Password input %s should show %s? %s, shouldn't show the alert if the input is empty",
       async (string, alert, shouldAlert) => {
         const { user } = setup('/register');
-        const passwordInput = screen.getByLabelText(/password/i);
+        const passwordInput = screen.getByLabelText(/^password$/i);
 
         expect(screen.queryByText(alert)).toBeNull();
 
@@ -75,4 +83,33 @@ describe('Register page', () => {
       }
     );
   });
+});
+
+describe('Login page', () => {
+  it('Should show Sign In button, Sign in title, username input and password input', () => {
+    setup('/login');
+
+    expect(screen.getAllByText(/sign in/i)).toHaveLength(2);
+    expect(screen.getByLabelText(/username/i)).toBeTruthy();
+    expect(screen.getByLabelText(/password/i)).toBeTruthy();
+  });
+
+  describe('Sign in button', () => {
+    it.each([
+      ['blank', 'abc'],
+      ['abc', 'blank'],
+      ['blank', 'blank'],
+    ])('Should be disabled if username input is and password input is', async (username, password) => {
+      const { user } = setup('/login');
+      const button = screen.getAllByText(/sign in/i);
+      const usernameInput = screen.getByLabelText(/username/i);
+      const passwordInput = screen.getByLabelText(/password/i);
+
+      await user.type(usernameInput, username === 'blank' ? ' ' : username);
+      await user.type(passwordInput, username === 'blank' ? ' ' : password);
+      await user.click(button[1]);
+      expect(screen.getAllByText(/sign in/i)).toHaveLength(button.length);
+    });
+  });
+
 });

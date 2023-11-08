@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import ArgentinianButton from '../components/ArgentinianButton';
 import { useNavigate } from 'react-router-dom';
+import Divisor from '../components/Divisor';
+import CustomInput from '../components/CustomInput';
 
 interface DataResponse {
   errors: {
@@ -94,20 +96,18 @@ function RegisterForm() {
   return (
     <>
       <h2 className='text-left text-3xl mx-auto max-w-xs'>Sign up</h2>
-      <div className='bg-jet w-full h-[1px] my-1'></div>
+      <Divisor />
       <form
         onSubmit={e => handleSubmit(e)}
         className='flex flex-col max-w-xs mx-auto justify-between'
       >
         <div className='flex flex-col gap-1'>
           <label htmlFor='username'>Username</label>
-          <input
-            type='text'
-            onChange={e => setUsername(e.target.value.trim())}
-            name='username'
-            id='username'
-            className='outline-none p-[5px] text-xl border-jet border rounded-sm'
+          <CustomInput
+            autoComplete='username'
             autoFocus
+            id='username'
+            onChange={e => setUsername(e.target.value.trim())}
           />
           <ul
             className={`${
@@ -129,12 +129,11 @@ function RegisterForm() {
         </div>
         <div className='flex flex-col gap-1'>
           <label htmlFor='password'>Password</label>
-          <input
-            type='password'
-            onChange={e => setPassword(e.target.value.trim())}
-            name='password'
+          <CustomInput
             id='password'
-            className='outline-none p-[5px] border-jet text-xl border rounded-sm'
+            password
+            onChange={e => setPassword(e.target.value.trim())}
+            autoComplete='new-password'
           />
           <ul
             className={`${
@@ -155,13 +154,12 @@ function RegisterForm() {
           </ul>
         </div>
         <div className='flex flex-col gap-1'>
-          <label htmlFor='password'>Confirm Password</label>
-          <input
-            type='password'
+          <label htmlFor='confirm_password'>Confirm Password</label>
+          <CustomInput
+            autoComplete='new-password'
+            password
             onChange={e => setConfirmPassword(e.target.value)}
-            name='confirm_password'
             id='confirm_password'
-            className='outline-none p-[5px] border-jet text-xl border rounded-sm'
           />
         </div>
         <ul className='h-[16px] mb-1'>

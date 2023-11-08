@@ -1,18 +1,22 @@
+import { Link } from 'react-router-dom';
 import ArgentinianButton from '../components/ArgentinianButton';
+import Divisor from '../components/Divisor';
 
 function RegisterSuccess() {
   return (
     <>
-      <h2 className='text-left text-3xl px-2'>
+      <h2 className='text-left text-3xl max-w-xs'>
         Registered <br /> Successfully
       </h2>
-      <div className='bg-jet w-full h-[1px] my-1'></div>
-      <div className='flex flex-col gap-5 p-2 mx-auto'>
+      <Divisor />
+      <div className='flex flex-col max-w-xs gap-5 mx-auto'>
         <p className='text-4xl text-left'>
-        You registered successfully, welcome to the fun part!
+          You registered successfully, welcome to the fun part!
         </p>
         <p className='text-xl'>Start your journey signing in</p>
-        <ArgentinianButton text='Sign In' />
+        <Link to='/login'>
+          <ArgentinianButton text='Sign In' />
+        </Link>
       </div>
     </>
   );
