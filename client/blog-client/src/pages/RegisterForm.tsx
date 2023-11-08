@@ -18,13 +18,13 @@ function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [inputErrors, setInputErrors] = useState<DataResponse['errors']>();
   const [serverError, setServerError] = useState<string>('');
-  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
   const redirect = useNavigate();
 
   async function handleSubmit(e: any) {
     e.preventDefault();
 
-    if (success === true) return;
+    setLoading(true);
 
     const data = {
       username: username,
@@ -64,11 +64,13 @@ function RegisterForm() {
               break;
             case 200:
               setServerError('');
-              setSuccess(true);
               redirect('success');
+              setLoading(false);
           }
+          setLoading(false);
         } else if (Object.keys(data.errors).length > 0 && res.status === 400) {
           setInputErrors(data.errors);
+          setLoading(false);
         }
       });
   }
@@ -175,8 +177,22 @@ function RegisterForm() {
             </span>
           )}
         </ul>
-        <div className='flex justify-center flex-col items-center'>
-          <ArgentinianButton text='Register' />
+        <div className='items-center w-fit h-fit relative mx-auto'>
+          <ArgentinianButton
+            text='Register'
+            disabled={
+              username.length === 0 ||
+              password.length === 0 ||
+              confirmPassword.length === 0
+            }
+          />
+          <div className='absolute top-1/2 left-[120%] flex justify-center items-center -translate-y-1/2'>
+            {loading && (
+              <span className='loader'>
+                <span className='text-transparent'>loading</span>
+              </span>
+            )}
+          </div>
         </div>
       </form>
     </>
