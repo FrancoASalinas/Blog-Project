@@ -18,11 +18,15 @@ const {
   getPostLikes,
   likeComment,
   getCommentLikes,
+  followUser,
+  getUserFollowers,
+  deleteUserFollower,
+  getUserFollowing,
 } = require('./handlers.js');
 
 const app = express();
 
-app.use(cors())
+app.use(cors());
 
 app.use(express.json());
 
@@ -79,6 +83,18 @@ app.post('/posts/:id/comments/:commentId/likes', likeComment);
 
 //Get a comment likes
 app.get('/posts/:id/comments/:commentId/likes', getCommentLikes);
+
+//Follow an user
+app.post('/users/:id/followers', followUser);
+
+//Get user's followers
+app.get('/users/:id/followers', getUserFollowers);
+
+//Unfollow user
+app.delete('/users/:id/followers/:followerId', deleteUserFollower);
+
+//Get user's following
+app.get('/users/:id/following', getUserFollowing);
 
 //Not Found
 app.use((req, res) => {

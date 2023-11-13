@@ -199,7 +199,9 @@ describe('Handlers', () => {
         .send(' ')
         .expect(400)
         .then(res => {
-          expect(res.body).toStrictEqual({ errors: ['Username and password required'] });
+          expect(res.body).toStrictEqual({
+            errors: ['Username and password required'],
+          });
         });
     });
 
@@ -670,6 +672,117 @@ describe('Handlers', () => {
           //Delete post
           query('DELETE FROM posts WHERE post_id=$1', [postId]);
         });
+    });
+  });
+
+  describe('Followers and following', () => {
+    let id;
+    let followerId;
+    describe("POST '/users/:id/followers'", () => {
+      it('should make first user a follower of user/:id', async () => {
+        const username = 'user123';
+        //register user
+        await request(app)
+          .post('/register')
+          .send({
+            username: username,
+            password: username,
+            confirm_password: username,
+          })
+          .expect(200);
+
+        //retrieve id
+        const { rows } = await query(
+          'SELECT user_id FROM users WHERE user_name=$1',
+          [username]
+        );
+        id = rows[0].user_id;
+
+        //follow user
+        const user = await loggedUser();
+
+        await user.post(`/users/${id}/followers`).expect(200);
+      });
+
+      test('If id is not a number throw status 404', async () => {
+        const user = await loggedUser();
+        await user.post('/users/abc/followers').expect(404);
+      });
+
+      test('If user id does not exist throw status 404', async () => {
+        const user = await loggedUser();
+        await user.post('/users/010/followers').expect(404);
+      });
+    });
+    describe("GET '/users/:id/followers'", () => {
+      it('Should get all the followers for that user', async () => {
+        const user = await loggedUser();
+        await user
+          .get(`/users/${id}/followers`)
+          .expect(200)
+          .then(res => {
+            const body = JSON.parse(res.text);
+            expect(body.followers).toBeTruthy();
+          });
+      });
+
+      test('If id is not a number, throw status 404', async () => {
+        const user = await loggedUser();
+        await user.get(`/users/abc/followers`).expect(404);
+      });
+      test('If user does not exist, throw status 404', async () => {
+        const user = await loggedUser();
+        await user.get('/users/0123/followers').expect(404);
+      });
+    });
+
+    describe("DELETE '/users/:id/followers/:followerId'", () => {
+      test('Should unfollow the user', async () => {
+        const user = await loggedUser();
+
+        await user.get(`/users/${id}/followers`).then(res => {
+          const body = JSON.parse(res.text);
+
+          followerId = body.followers[0].follower_id;
+        });
+
+        await user.delete(`/users/${id}/followers/${followerId}`).expect(200);
+      });
+      test('If id is not a number, throw satus 404', async () => {
+        const user = await loggedUser();
+        await user.delete(`/users/abc/followers/${followerId}`).expect(404);
+      });
+      test('If user does not exist, throw satus 404', async () => {
+        const user = await loggedUser();
+        await user.delete(`/users/002/followers/${followerId}`).expect(404);
+      });
+
+      describe("Get '/users/:id/following'", () => {
+        it('Should get all the users that this user is following', async () => {
+          const user = await loggedUser();
+          await user
+            .get(`/users/${followerId}/following`)
+            .expect(200)
+            .then(res => {
+              const body = JSON.parse(res.text);
+              expect(body.following).toBeTruthy();
+            });
+        });
+        test('If id is not a number, throw status 404', async () => {
+          const user = await loggedUser();
+          await user.get(`/users/${followerId}/following`).expect(404);
+        });
+        test('If user dows not exist throw status 404', async () => {
+          const user = await loggedUser();
+          await user
+            .get(`/users/0023/following`)
+            .expect(404)
+            .then(() => {
+              //delete user
+              query('DELETE FROM users WHERE user_id=$1', [id]);
+            });
+        });
+      });
     });
   });
 });

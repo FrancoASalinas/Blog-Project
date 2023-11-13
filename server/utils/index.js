@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const { query } = require('../database');
 
 const tests = {
   isLargerThan: (param, n) =>
@@ -77,4 +78,15 @@ module.exports = {
 
   passwordIsConfirmed: (password, confirm) =>
     !(password.trim() === confirm.trim()) && ['Passwords are not equal'],
+  isUserExist: async userId => {
+    if (!isNaN(userId)) {
+      const { rowCount } = await query('SELECT * FROM users WHERE user_id=$1', [
+        userId,
+      ]);
+
+      if (rowCount === 1) return true;
+      return false;
+    }
+    return false;
+  },
 };

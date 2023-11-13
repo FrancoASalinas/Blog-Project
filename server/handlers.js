@@ -6,6 +6,7 @@ const {
   validatePassword,
   validateUsername,
   passwordIsConfirmed,
+  isUserExist,
 } = require('./utils/index');
 
 const loginHandler = async (req, res) => {
@@ -30,7 +31,7 @@ const loginHandler = async (req, res) => {
             res.status(200);
             res.end();
           } else {
-            res.type('application/json')
+            res.type('application/json');
             res
               .status(400)
               .send({ errors: ['Username or password are incorrect'] });
@@ -38,11 +39,11 @@ const loginHandler = async (req, res) => {
         }
       });
     } else {
-      res.type('application/json')
+      res.type('application/json');
       res.status(400).send({ errors: ['Username or password are incorrect'] });
     }
   } else {
-    res.type('application/json')
+    res.type('application/json');
     res.status(400).send({ errors: ['Username and password required'] });
   }
 };
@@ -439,7 +440,99 @@ const getCommentLikes = async (req, res) => {
   });
 };
 
+const followUser = async (req, res) => {
+  isAuthenticated(req, res, async () => {
+    const userId = req.params.id;
+    const followerId = req.session.userId;
+
+    const user = await isUserExist(userId);
+
+    if (user) {
+      const { rowCount } = await query(
+        'INSERT INTO followers(user_id, follower_id) VALUES($1, $2) RETURNING *',
+        [userId, followerId]
+      );
+
+      if (rowCount === 1) {
+        res.status(200);
+        res.end();
+      }
+    } else {
+      res.status(404);
+      res.end();
+    }
+  });
+};
+
+const getUserFollowers = (req, res) =>
+  isAuthenticated(req, res, async () => {
+    const id = req.params.id;
+
+    const user = await isUserExist(id);
+
+    if (user) {
+      const { rows } = await query('SELECT * FROM followers WHERE user_id=$1', [
+        id,
+      ]);
+
+      res.status(200);
+      res.end(JSON.stringify({ followers: rows }));
+    } else {
+      res.status(404);
+      res.end();
+    }
+  });
+
+const deleteUserFollower = (req, res) =>
+  isAuthenticated(req, res, async () => {
+    const userId = req.params.id;
+    const followerId = req.params.followerId;
+
+    const user = await isUserExist(userId);
+    const follower = await isUserExist(followerId);
+
+    if (user && follower) {
+      const { rowCount } = await query(
+        'DELETE FROM followers WHERE user_id=$1 AND follower_id=$2 RETURNING *',
+        [userId, followerId]
+      );
+      if (rowCount > 0) {
+        res.status(200);
+        res.end();
+      } else {
+        res.status(500);
+        res.end();
+      }
+    } else {
+      res.status(404);
+      res.end();
+    }
+  });
+
+const getUserFollowing = (req, res) =>
+  isAuthenticated(req, res, async () => {
+    const id = req.params.id;
+    const user = await isUserExist(id);
+
+    if (user) {
+      const { rows } = await query(
+        'SELECT user_id FROM followers WHERE follower_id=$1',
+        [id]
+      );
+
+      res.status(200);
+      res.end(JSON.stringify({ following: rows }));
+    } else {
+      res.status(404);
+      res.end();
+    }
+  });
+
 module.exports = {
+  getUserFollowing,
+  deleteUserFollower,
+  getUserFollowers,
+  followUser,
   getCommentLikes,
   likeComment,
   getPostLikes,
