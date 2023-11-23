@@ -141,11 +141,12 @@ const postHandler = async (req, res) => {
 const createPostHandler = async (req, res) => {
   isAuthenticated(req, res, async () => {
     const { body } = req;
+    const userId = req.session.userId;
 
-    if (body.content && body.author) {
+    if (body.content) {
       const { rows } = await query(
         'INSERT INTO posts(post_author, post_body) VALUES($1, $2) RETURNING *',
-        [body.author, body.content]
+        [userId, body.content]
       );
 
       res.writeHead(201, { 'Content-Type': 'application/json' });
@@ -528,7 +529,27 @@ const getUserFollowing = (req, res) =>
     }
   });
 
+const followingSortedPosts = (req, res) =>
+  isAuthenticated(req, res, async () => {
+    // const sort = req.params.sort;
+    const userId = req.session.userId;
+
+    const followingPostsByLikes = await query(
+      'SELECT * FROM posts p INNER JOIN post_likes l ON p.post_id=l.post_id WHERE post_author IN (SELECT user_id FROM followers WHERE follower_id=$1)',
+      [userId]
+    ).then(queryResult => 
+      query(
+        'SELECT * FROM posts p, LATERAL (SELECT COUNT(*) as likes FROM post_likes WHERE post_id=p.post_id) WHERE post_id = ANY($1) ORDER BY likes DESC LIMIT 10',
+        [queryResult.rows.map(entry => (entry = entry.post_id))]
+      )
+    ).then(queryResult => queryResult.rows)
+
+    res.status(200);
+    res.end(JSON.stringify({ posts: followingPostsByLikes }));
+  });
+
 module.exports = {
+  followingSortedPosts,
   getUserFollowing,
   deleteUserFollower,
   getUserFollowers,

@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "nodemon": "nodemon index.js --trace-sync-io",
-    "test": "NODE_ENV=test jest --detectOpenHandles --watch"
+    "test": "NODE_ENV=test jest --config=./jest.config.json --detectOpenHandles --watch"
   },
   "keywords": [],
   "author": "",

@@ -22,6 +22,7 @@ const {
   getUserFollowers,
   deleteUserFollower,
   getUserFollowing,
+  followingSortedPosts,
 } = require('./handlers.js');
 
 const app = express();
@@ -95,6 +96,9 @@ app.delete('/users/:id/followers/:followerId', deleteUserFollower);
 
 //Get user's following
 app.get('/users/:id/following', getUserFollowing);
+
+//Get posts from the user's followings
+app.get('/posts/following/liked', followingSortedPosts);
 
 //Not Found
 app.use((req, res) => {
