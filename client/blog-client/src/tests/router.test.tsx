@@ -1,6 +1,6 @@
 import { MemoryRouter, Routes } from 'react-router-dom';
 import { routes } from '../utils/routes';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 export const setup = (entries: string | string[], index?: number) => {
@@ -46,14 +46,14 @@ describe('routes', () => {
       expect(screen.getByLabelText(/username/i)).toBeTruthy();
       expect(screen.getByLabelText(/password/i)).toBeTruthy();
     });
+  });
+});
 
-    describe('Register Success', () => {
-      test('Click on Sign In should navigate to /login', async () => {
-        const { user } = setup('/register/success');
-
-        await user.click(screen.getByText(/sign in/i));
-        expect(screen.getAllByText(/sign in/i)).toHaveLength(2);
-      });
-    });
+describe('Register Success /register/success', () => {
+  it('should redirect to /register if success is false', async () => {
+    setup('/register/success');
+    await waitFor(() =>
+      expect(screen.queryByText(/registered successfully/i)).toBeNull()
+    );
   });
 });

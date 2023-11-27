@@ -19,7 +19,7 @@ function RegisterForm() {
   const [inputErrors, setInputErrors] = useState<DataResponse['errors']>();
   const [serverError, setServerError] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const redirect = useNavigate();
+  const navigate = useNavigate();
 
   async function handleSubmit(e: any) {
     e.preventDefault();
@@ -64,7 +64,7 @@ function RegisterForm() {
               break;
             case 200:
               setServerError('');
-              redirect('success');
+              navigate('success', {replace: true, state: {success: true}});
               setLoading(false);
           }
           setLoading(false);
