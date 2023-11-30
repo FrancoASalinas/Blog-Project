@@ -1,6 +1,8 @@
 const express = require('express');
+require('dotenv').config();
 const session = require('express-session');
 const cors = require('cors');
+const pgSession = require('connect-pg-simple')(session);
 const {
   loginHandler,
   registerHandler,
@@ -27,15 +29,34 @@ const {
 
 const app = express();
 
-app.use(cors());
+app.use(
+  session({
+    secret: 'test-secret',
+    resave: true,
+    saveUninitialized: false,
+    store: new pgSession({
+      conString: `postgres://${process.env.DBUSER}:${process.env.DBPASSWORD}@${
+        process.env.DBHOST
+      }:${process.env.DBPORT}/${
+        process.env.NODE_ENV === 'test'
+          ? process.env.DBDATABASE_TEST
+          : process.env.DBDATABASE
+      }`,
+      createTableIfMissing: true,
+    }),
+    cookie: {
+      httpOnly: false,
+      secure: false,
+      sameSite: false
+    }
+  })
+);
+
+app.use(cors({ credentials: true, origin: 'http://localhost:5173' }));
 
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
-
-app.use(
-  session({ secret: 'test-secret', resave: true, saveUninitialized: false })
-);
 
 //login
 app.post('/login', loginHandler);
