@@ -21,14 +21,6 @@ const tests = {
 };
 
 module.exports = {
-  isAuthenticated: (req, res, cb) => {
-    if (req.session.userId) {
-      cb();
-    } else {
-      res.status(401).send('Unauthorized');
-    }
-  },
-
   hashPassword: (password, cb) => {
     bcrypt.genSalt((err, salt) => {
       if (err) return cb(err);

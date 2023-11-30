@@ -29,6 +29,8 @@ const {
 
 const app = express();
 
+const authorizedPaths = ['/login', '/register'];
+
 app.use(
   session({
     secret: 'test-secret',
@@ -47,8 +49,8 @@ app.use(
     cookie: {
       httpOnly: false,
       secure: false,
-      sameSite: false
-    }
+      sameSite: false,
+    },
   })
 );
 
@@ -57,6 +59,14 @@ app.use(cors({ credentials: true, origin: 'http://localhost:5173' }));
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
+
+app.use((req, res, next) => {
+  if (req.session.userId || authorizedPaths.includes(req.path)) {
+    next();
+  } else {
+    res.status(401).send('Unauthorized');
+  }
+});
 
 //login
 app.post('/login', loginHandler);
