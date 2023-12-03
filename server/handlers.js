@@ -207,38 +207,47 @@ const updatePostHandler = async (req, res) => {
   if (body.content || body.image) {
     const { id } = req.params;
 
-    const { rows } = await query(
-      'UPDATE posts SET post_body=$1 WHERE post_id=$2 RETURNING *',
-      [body.content, id]
-    );
+    const doesPostExist = await query('SELECT * FROM posts WHERE post_id=$1', [
+      id,
+    ]).then(query => (query.rowCount > 0 ? true : false));
 
-    if (body.image) {
-      const doesPostImage = await query(
-        'SELECT * FROM posts WHERE post_id=$1',
-        [id]
-      ).then(res =>
-        res.rows[0].post_imageid
-          ? { does: true, imageId: res.rows[0].post_imageid }
-          : { does: false }
+    if (doesPostExist) {
+      const { rows } = await query(
+        'UPDATE posts SET post_body=$1 WHERE post_id=$2 RETURNING *',
+        [body.content, id]
       );
-      if (doesPostImage.does) {
-        const imageBuffer = Buffer.from(body.image, 'base64');
-        await fs.writeFile(
-          `./images/${doesPostImage.imageId}.jpg`,
-          imageBuffer
-        );
-        const image = await fs.readFile(
-          `./images/${doesPostImage.imageId}.jpg`,
-          {
-            encoding: 'base64',
-          }
-        );
 
-        rows[0].post_image = image;
+      if (body.image) {
+        const doesPostImage = await query(
+          'SELECT * FROM posts WHERE post_id=$1',
+          [id]
+        ).then(res =>
+          res.rows[0].post_imageid
+            ? { does: true, imageId: res.rows[0].post_imageid }
+            : { does: false }
+        );
+        if (doesPostImage.does) {
+          const imageBuffer = Buffer.from(body.image, 'base64');
+          await fs.writeFile(
+            `./images/${doesPostImage.imageId}.jpg`,
+            imageBuffer
+          );
+          const image = await fs.readFile(
+            `./images/${doesPostImage.imageId}.jpg`,
+            {
+              encoding: 'base64',
+            }
+          );
+
+          rows[0].post_image = image;
+        }
       }
-    }
 
-    res.status(200).send(JSON.stringify(rows[0]));
+      res.status(200).send(JSON.stringify(rows[0]));
+    } else {
+      res.status(404);
+      res.end();
+    }
   } else {
     res.status(400).send('There is an error on the request syntax');
   }
@@ -247,22 +256,31 @@ const updatePostHandler = async (req, res) => {
 const deletePostHandler = async (req, res) => {
   const { id } = req.params;
 
-  const doesHaveImage = await query(
-    'SELECT * FROM posts WHERE post_id=$1',
-    [id]
-  ).then(query =>
-    query.rows[0].post_imageid
-      ? { does: true, imageId: query.rows[0].post_imageid }
-      : { does: false }
-  );
+  const doesPostExist = await query('SELECT FROM posts WHERE post_id=$1', [
+    id,
+  ]).then(query => (query.rowCount > 0 ? true : false));
 
-  if (doesHaveImage.does) {
-    await fs.rm(`./images/${doesHaveImage.imageId}.jpg`);
+  if (doesPostExist) {
+    const doesHaveImage = await query('SELECT * FROM posts WHERE post_id=$1', [
+      id,
+    ]).then(query =>
+      query.rows[0].post_imageid
+        ? { does: true, imageId: query.rows[0].post_imageid }
+        : { does: false }
+    );
+
+    if (doesHaveImage.does) {
+      await fs.rm(`./images/${doesHaveImage.imageId}.jpg`);
+    }
+
+    await query('DELETE FROM posts WHERE post_id=$1', [id]);
+
+    res.status(204);
+    res.end();
+  } else {
+    res.status(404);
+    res.end();
   }
-
-  res.status(204);
-  res.end();
-  await query('DELETE FROM posts WHERE post_id=$1', [id]);
 };
 
 const addComment = async (req, res) => {

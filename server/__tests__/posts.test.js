@@ -86,6 +86,12 @@ describe("GET '/posts/:id'", () => {
     await request.agent(app).get(`/posts/${postId}`).expect(401);
   });
 
+  test("If post doesn't exist it should throw status 404", async () => {
+    const user = await loggedUser();
+
+    await user.get('/posts/001').expect(404)
+  })
+
   test("Get '/posts/1' should respond with a post", async () => {
     const user = await loggedUser();
 
@@ -136,6 +142,12 @@ describe("PUT 'posts/:id'", () => {
       });
   });
 
+  test("If posts doesn't exist throw status 404", async () => {
+    const user = await loggedUser();
+
+    await user.put('/posts/001').send({content: testContent}).expect(404)
+  })
+
   test('Put a post with an image should update that image also', async () => {
     const user = await loggedUser();
 
@@ -163,6 +175,11 @@ describe("DELETE 'posts/:id'", () => {
 
     await user.delete(`/posts/${postId}`).expect(204);
   });
+
+  test("If post doesn't exist throw status 404", async () => {
+    const user = await loggedUser();
+    await user.delete('/posts/001').expect(404)
+  })
 });
 
 describe("Post's Likes", () => {
