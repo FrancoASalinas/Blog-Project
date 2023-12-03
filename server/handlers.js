@@ -1,4 +1,7 @@
 const { query } = require('./database');
+const fs = require('fs/promises');
+const { Buffer } = require('buffer');
+const crypto = require('crypto');
 const {
   hashPassword,
   compareHash,
@@ -125,6 +128,12 @@ const postHandler = async (req, res) => {
   const post = rows.length === 1;
 
   if (post) {
+    if (rows[0].post_imageid) {
+      const image = await fs.readFile(`./images/${rows[0].post_imageid}.jpg`, {
+        encoding: 'base64',
+      });
+      rows[0].post_image = image;
+    }
     res.writeHead(200, { 'Content-type': 'application/json' });
     res.end(JSON.stringify(rows[0]));
   } else {
@@ -134,17 +143,59 @@ const postHandler = async (req, res) => {
 };
 
 const createPostHandler = async (req, res) => {
-  const { body } = req;
+  const { content, image } = req.body;
   const userId = req.session.userId;
 
-  if (body.content) {
-    const { rows } = await query(
-      'INSERT INTO posts(post_author, post_body) VALUES($1, $2) RETURNING *',
-      [userId, body.content]
-    );
+  if (content) {
+    if (image) {
+      async function generateImageId() {
+        const uuid = crypto.randomUUID();
+        const isIdTaken = async () => {
+          await query('SELECT * FROM posts WHERE post_imageid=$1', [uuid]).then(
+            query => (query.rowCount > 0 ? true : false)
+          );
+        };
+        if (await isIdTaken()) {
+          return generateImageId();
+        }
+        return uuid;
+      }
 
-    res.writeHead(201, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(rows[0]));
+      const imageId = await generateImageId();
+
+      const imageBuffer = Buffer.from(image, 'base64');
+
+      try {
+        await fs.mkdir('./images', { recursive: true }).then(async () => {
+          await fs.writeFile(`./images/${imageId}.jpg`, imageBuffer);
+        });
+
+        const { rows } = await query(
+          'INSERT INTO posts(post_author, post_body, post_imageid) VALUES($1, $2, $3) RETURNING *',
+          [userId, content, imageId]
+        );
+
+        const postData = {
+          ...rows[0],
+          post_image: image,
+        };
+
+        res.type('application/json');
+        res.status(201);
+        res.end(JSON.stringify(postData));
+      } catch (err) {
+        console.log(err);
+      }
+    } else {
+      const { rows } = await query(
+        'INSERT INTO posts(post_author, post_body) VALUES($1, $2) RETURNING *',
+        [userId, content]
+      );
+
+      res.type('application/json');
+      res.status(201);
+      res.end(JSON.stringify(rows[0]));
+    }
   } else {
     res.writeHead(400, 'Bad Request');
     res.end('There is an error on the request syntax');
@@ -153,12 +204,39 @@ const createPostHandler = async (req, res) => {
 
 const updatePostHandler = async (req, res) => {
   const { body } = req;
-  if (body.content) {
+  if (body.content || body.image) {
     const { id } = req.params;
+
     const { rows } = await query(
       'UPDATE posts SET post_body=$1 WHERE post_id=$2 RETURNING *',
       [body.content, id]
     );
+
+    if (body.image) {
+      const doesPostImage = await query(
+        'SELECT * FROM posts WHERE post_id=$1',
+        [id]
+      ).then(res =>
+        res.rows[0].post_imageid
+          ? { does: true, imageId: res.rows[0].post_imageid }
+          : { does: false }
+      );
+      if (doesPostImage.does) {
+        const imageBuffer = Buffer.from(body.image, 'base64');
+        await fs.writeFile(
+          `./images/${doesPostImage.imageId}.jpg`,
+          imageBuffer
+        );
+        const image = await fs.readFile(
+          `./images/${doesPostImage.imageId}.jpg`,
+          {
+            encoding: 'base64',
+          }
+        );
+
+        rows[0].post_image = image;
+      }
+    }
 
     res.status(200).send(JSON.stringify(rows[0]));
   } else {
@@ -169,10 +247,22 @@ const updatePostHandler = async (req, res) => {
 const deletePostHandler = async (req, res) => {
   const { id } = req.params;
 
-  await query('DELETE FROM posts WHERE post_id=$1', [id]);
+  const doesHaveImage = await query(
+    'SELECT * FROM posts WHERE post_id=$1',
+    [id]
+  ).then(query =>
+    query.rows[0].post_imageid
+      ? { does: true, imageId: query.rows[0].post_imageid }
+      : { does: false }
+  );
+
+  if (doesHaveImage.does) {
+    await fs.rm(`./images/${doesHaveImage.imageId}.jpg`);
+  }
 
   res.status(204);
   res.end();
+  await query('DELETE FROM posts WHERE post_id=$1', [id]);
 };
 
 const addComment = async (req, res) => {

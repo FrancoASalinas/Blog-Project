@@ -3,3 +3,4 @@ server/.env
 server/node_modules
 server/node_modules/.package-lock.json
 server/*.sql
+server/images
