@@ -116,10 +116,29 @@ const registerHandler = async (req, res) => {
 };
 
 const allPostsHandler = async (req, res) => {
+  const userId = req.session.userId;
   const { rows } = await query('SELECT * FROM posts');
+  const queryParams = req.query;
 
-  res.writeHead(200, { 'Content-type': 'application/json' });
-  res.end(JSON.stringify(rows));
+  if (queryParams.order === 'likes') {
+    const followingPostsByLikes = await query(
+      'SELECT * FROM posts p INNER JOIN post_likes l ON p.post_id=l.post_id WHERE post_author IN (SELECT user_id FROM followers WHERE follower_id=$1)',
+      [userId]
+    )
+      .then(queryResult =>
+        query(
+          'SELECT * FROM posts p, LATERAL (SELECT COUNT(*) as likes FROM post_likes WHERE post_id=p.post_id) WHERE post_id = ANY($1) ORDER BY likes DESC LIMIT 10',
+          [queryResult.rows.map(entry => (entry = entry.post_id))]
+        )
+      )
+      .then(queryResult => queryResult.rows);
+
+    res.status(200);
+    res.end(JSON.stringify({ posts: followingPostsByLikes }));
+  } else {
+    res.writeHead(200, { 'Content-type': 'application/json' });
+    res.end(JSON.stringify(rows));
+  }
 };
 
 const postHandler = async (req, res) => {
@@ -603,28 +622,7 @@ const getUserFollowing = async (req, res) => {
   }
 };
 
-const followingSortedPosts = async (req, res) => {
-  // const sort = req.params.sort;
-  const userId = req.session.userId;
-
-  const followingPostsByLikes = await query(
-    'SELECT * FROM posts p INNER JOIN post_likes l ON p.post_id=l.post_id WHERE post_author IN (SELECT user_id FROM followers WHERE follower_id=$1)',
-    [userId]
-  )
-    .then(queryResult =>
-      query(
-        'SELECT * FROM posts p, LATERAL (SELECT COUNT(*) as likes FROM post_likes WHERE post_id=p.post_id) WHERE post_id = ANY($1) ORDER BY likes DESC LIMIT 10',
-        [queryResult.rows.map(entry => (entry = entry.post_id))]
-      )
-    )
-    .then(queryResult => queryResult.rows);
-
-  res.status(200);
-  res.end(JSON.stringify({ posts: followingPostsByLikes }));
-};
-
 module.exports = {
-  followingSortedPosts,
   getUserFollowing,
   deleteUserFollower,
   getUserFollowers,
