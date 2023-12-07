@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ArgentinianButton from '../components/ArgentinianButton';
 import CustomInput from '../components/CustomInput';
 import Divisor from '../components/Divisor';
+import { useNavigate } from 'react-router-dom';
 
 interface DataResponse {
   errors: string[];
@@ -13,6 +14,8 @@ function LoginForm() {
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const navigate = useNavigate();
+
   function handleSubmit(e: any) {
     e.preventDefault();
     setLoading(true);
@@ -22,8 +25,9 @@ function LoginForm() {
         username: username,
         password: password,
       }),
-      headers: new Headers({ 'content-type': 'application/json' }),
+      headers: new Headers({ 'content-type': 'application/json'}),
       method: 'POST',
+      credentials: 'include'
     })
       .then(res => {
         if (
@@ -41,6 +45,7 @@ function LoginForm() {
               break;
             case 200:
               setErrors([]);
+              navigate('/feed', {replace: true});
               break;
           }
           setLoading(false);
