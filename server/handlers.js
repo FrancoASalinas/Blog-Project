@@ -117,7 +117,9 @@ const registerHandler = async (req, res) => {
 
 const allPostsHandler = async (req, res) => {
   const userId = req.session.userId;
-  const { rows } = await query('SELECT * FROM posts');
+  const { rows } = await query(
+    'SELECT p.*, u.user_name FROM posts p INNER JOIN users u ON p.post_author=u.user_id'
+  );
   const queryParams = req.query;
 
   async function addPostsImages(posts) {
@@ -134,19 +136,19 @@ const allPostsHandler = async (req, res) => {
 
   if (queryParams.order === 'likes') {
     const followingPostsByLikes = await query(
-      'SELECT * FROM posts p INNER JOIN post_likes l ON p.post_id=l.post_id WHERE post_author IN (SELECT user_id FROM followers WHERE follower_id=$1)',
+      'SELECT p.*, l.* FROM posts p INNER JOIN post_likes l ON p.post_id=l.post_id INNER JOIN users u ON post_author=u.user_id WHERE post_author IN (SELECT user_id FROM followers WHERE follower_id=$1)',
       [userId]
     )
       .then(queryResult =>
         query(
-          'SELECT * FROM posts p, LATERAL (SELECT COUNT(*) as post_likes FROM post_likes WHERE post_id=p.post_id) WHERE post_id = ANY($1) ORDER BY post_likes DESC LIMIT 10',
+          'SELECT p.*, u.user_name FROM posts p INNER JOIN users u ON p.post_author=u.user_id, LATERAL (SELECT COUNT(*) as post_likes FROM post_likes WHERE post_id=p.post_id) WHERE post_id = ANY($1) ORDER BY post_likes DESC LIMIT 10',
           [queryResult.rows.map(entry => (entry = entry.post_id))]
         )
       )
       .then(queryResult => queryResult.rows);
 
     const notLikedUserPosts = await query(
-      'SELECT * FROM posts p FULL OUTER JOIN post_likes l ON p.post_id=l.post_id WHERE user_id IS NULL AND post_author=$1',
+      'SELECT p.*, l.*, u.user_name FROM posts p FULL OUTER JOIN post_likes l ON p.post_id=l.post_id INNER JOIN users u ON p.post_author=u.user_id WHERE l.user_id IS NULL AND post_author=$1',
       [userId]
     ).then(query => query.rows);
 
@@ -169,7 +171,7 @@ const allPostsHandler = async (req, res) => {
 
 const postHandler = async (req, res) => {
   const { id } = req.params;
-  const { rows } = await query('SELECT * FROM posts WHERE post_id=$1', [id]);
+  const { rows } = await query('SELECT p.*, u.user_name FROM posts p INNER JOIN users u ON p.post_author=u.user_id WHERE post_id=$1', [id]);
   const post = rows.length === 1;
 
   if (post) {
