@@ -138,8 +138,6 @@ const allPostsHandler = async (req, res) => {
       [userId]
     ).then(query => query.rows);
 
-    console.log('not liked: ', notLikedUserPosts);
-
     res.status(200);
     res.end(
       JSON.stringify({
@@ -148,7 +146,7 @@ const allPostsHandler = async (req, res) => {
     );
   } else {
     res.writeHead(200, { 'Content-type': 'application/json' });
-    res.end(JSON.stringify(rows));
+    res.end(JSON.stringify({ posts: rows }));
   }
 };
 

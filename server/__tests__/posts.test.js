@@ -76,7 +76,7 @@ describe("GET '/posts'", () => {
       .expect(200)
       .then(res => {
         const { body } = res;
-        expect(body.length).toBeGreaterThanOrEqual(1);
+        expect(body.posts.length).toBeGreaterThanOrEqual(1);
       });
   });
 });
