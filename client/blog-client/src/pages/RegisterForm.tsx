@@ -3,6 +3,7 @@ import ArgentinianButton from '../components/ArgentinianButton';
 import { useNavigate } from 'react-router-dom';
 import Divisor from '../components/Divisor';
 import CustomInput from '../components/CustomInput';
+import Loader from '../components/Loader';
 
 interface DataResponse {
   errors: {
@@ -188,9 +189,7 @@ function RegisterForm() {
           />
           <div className='absolute top-1/2 left-[120%] flex justify-center items-center -translate-y-1/2'>
             {loading && (
-              <span className='loader'>
-                <span className='text-transparent'>loading</span>
-              </span>
+              <Loader />
             )}
           </div>
         </div>

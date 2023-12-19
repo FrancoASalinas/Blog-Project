@@ -3,6 +3,7 @@ import ArgentinianButton from '../components/ArgentinianButton';
 import CustomInput from '../components/CustomInput';
 import Divisor from '../components/Divisor';
 import { useNavigate } from 'react-router-dom';
+import Loader from '../components/Loader';
 
 interface DataResponse {
   errors: string[];
@@ -25,9 +26,9 @@ function LoginForm() {
         username: username,
         password: password,
       }),
-      headers: new Headers({ 'content-type': 'application/json'}),
+      headers: new Headers({ 'content-type': 'application/json' }),
       method: 'POST',
-      credentials: 'include'
+      credentials: 'include',
     })
       .then(res => {
         if (
@@ -45,7 +46,7 @@ function LoginForm() {
               break;
             case 200:
               setErrors([]);
-              navigate('/feed', {replace: true});
+              navigate('/feed', { replace: true });
               break;
           }
           setLoading(false);
@@ -101,11 +102,7 @@ function LoginForm() {
             disabled={username.length === 0 || password.length === 0}
           />
           <div className='absolute top-1/2 left-[120%] flex justify-center items-center -translate-y-1/2'>
-            {loading && (
-              <span className='loader'>
-                <span className='text-transparent'>loading</span>
-              </span>
-            )}
+            {loading && <Loader />}
           </div>
         </div>
       </form>
