@@ -127,14 +127,25 @@ const allPostsHandler = async (req, res) => {
     )
       .then(queryResult =>
         query(
-          'SELECT * FROM posts p, LATERAL (SELECT COUNT(*) as likes FROM post_likes WHERE post_id=p.post_id) WHERE post_id = ANY($1) ORDER BY likes DESC LIMIT 10',
+          'SELECT * FROM posts p, LATERAL (SELECT COUNT(*) as post_likes FROM post_likes WHERE post_id=p.post_id) WHERE post_id = ANY($1) ORDER BY post_likes DESC LIMIT 10',
           [queryResult.rows.map(entry => (entry = entry.post_id))]
         )
       )
       .then(queryResult => queryResult.rows);
 
+    const notLikedUserPosts = await query(
+      'SELECT * FROM posts p FULL OUTER JOIN post_likes l ON p.post_id=l.post_id WHERE user_id IS NULL AND post_author=$1',
+      [userId]
+    ).then(query => query.rows);
+
+    console.log('not liked: ', notLikedUserPosts);
+
     res.status(200);
-    res.end(JSON.stringify({ posts: followingPostsByLikes }));
+    res.end(
+      JSON.stringify({
+        posts: [...followingPostsByLikes, ...notLikedUserPosts],
+      })
+    );
   } else {
     res.writeHead(200, { 'Content-type': 'application/json' });
     res.end(JSON.stringify(rows));
