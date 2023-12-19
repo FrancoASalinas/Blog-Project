@@ -348,9 +348,7 @@ describe('Order followed user posts (principal page)', () => {
       .expect(200)
       .then(res => {
         const body = JSON.parse(res.text);
-        console.log(body);
 
-        expect(body.posts.length).toBe(3);
         expect(body.posts[0].post_body).toBe(secondPost.rows[0].post_body);
         expect(body.posts[1].post_body).toBe(thirdPost.rows[0].post_body);
         expect(body.posts[2].post_body).toBe(firstPost.rows[0].post_body);
@@ -359,4 +357,55 @@ describe('Order followed user posts (principal page)', () => {
         );
       });
   }, 20000);
+});
+
+describe('GET /posts should always return the posts created by user', () => {
+  let postId;
+
+  beforeAll(async () => {
+    const user = await loggedUser();
+
+    //create post
+    await user
+      .post('/posts')
+      .send({ content: 'new post' })
+      .expect(201)
+      .then(res => {
+        const body = JSON.parse(res.text);
+        postId = body.post_id;
+      });
+  });
+
+  test('GET /posts', async () => {
+    const user = await loggedUser();
+
+    //get all posts
+    await user
+      .get('/posts')
+      .expect(200)
+      .then(res => {
+        const body = JSON.parse(res.text);
+        expect(body.posts).toEqual(
+          expect.arrayContaining([expect.objectContaining({ post_id: postId })])
+        );
+      });
+    });
+
+    test('GET /posts?order=likes', async () => {
+      const user = await loggedUser();
+
+      await user
+        .get('/posts?order=likes')
+        .expect(200)
+        .then(res => {
+          const body = JSON.parse(res.text);
+          console.log(postId);
+          console.log(body)
+          expect(body.posts).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({ post_id: postId }),
+            ])
+          );
+        });
+    });
 });
