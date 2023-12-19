@@ -120,6 +120,18 @@ const allPostsHandler = async (req, res) => {
   const { rows } = await query('SELECT * FROM posts');
   const queryParams = req.query;
 
+  async function addPostsImages(posts) {
+    for (let post of posts) {
+      if (post.post_imageid) {
+        const image = await fs.readFile(`./images/${post.post_imageid}.jpg`, {
+          encoding: 'base64',
+        });
+
+        post.post_image = 'data:image/png;base64,' + image;
+      }
+    }
+  }
+
   if (queryParams.order === 'likes') {
     const followingPostsByLikes = await query(
       'SELECT * FROM posts p INNER JOIN post_likes l ON p.post_id=l.post_id WHERE post_author IN (SELECT user_id FROM followers WHERE follower_id=$1)',
@@ -138,6 +150,10 @@ const allPostsHandler = async (req, res) => {
       [userId]
     ).then(query => query.rows);
 
+    const posts = [...followingPostsByLikes, ...notLikedUserPosts];
+
+    await addPostsImages(posts);
+
     res.status(200);
     res.end(
       JSON.stringify({
@@ -145,6 +161,7 @@ const allPostsHandler = async (req, res) => {
       })
     );
   } else {
+    await addPostsImages(rows);
     res.writeHead(200, { 'Content-type': 'application/json' });
     res.end(JSON.stringify({ posts: rows }));
   }
