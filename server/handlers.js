@@ -117,9 +117,6 @@ const registerHandler = async (req, res) => {
 
 const allPostsHandler = async (req, res) => {
   const userId = req.session.userId;
-  const { rows } = await query(
-    'SELECT p.*, u.user_name FROM posts p INNER JOIN users u ON p.post_author=u.user_id'
-  );
   const queryParams = req.query;
 
   async function addPostsImages(posts) {
@@ -136,19 +133,19 @@ const allPostsHandler = async (req, res) => {
 
   if (queryParams.order === 'likes') {
     const followingPostsByLikes = await query(
-      'SELECT p.*, l.* FROM posts p INNER JOIN post_likes l ON p.post_id=l.post_id INNER JOIN users u ON post_author=u.user_id WHERE post_author IN (SELECT user_id FROM followers WHERE follower_id=$1)',
+      'SELECT p.post_id FROM posts p INNER JOIN post_likes l ON p.post_id=l.post_id WHERE post_author = ANY(SELECT user_id FROM followers WHERE follower_id=$1)',
       [userId]
     )
-      .then(queryResult =>
+      .then(async queryResult =>
         query(
-          'SELECT p.*, u.user_name FROM posts p INNER JOIN users u ON p.post_author=u.user_id, LATERAL (SELECT COUNT(*) as post_likes FROM post_likes WHERE post_id=p.post_id) WHERE post_id = ANY($1) ORDER BY post_likes DESC LIMIT 10',
-          [queryResult.rows.map(entry => (entry = entry.post_id))]
+          'SELECT p.*, post_likes, u.user_name, EXISTS(SELECT * FROM post_likes l WHERE l.post_id=p.post_id AND l.user_id=$1 ) as is_liked FROM posts p INNER JOIN users u ON p.post_author=u.user_id, LATERAL (SELECT CAST (COUNT(*) AS INTEGER) as post_likes FROM post_likes k WHERE post_id=p.post_id) WHERE post_id = ANY($2) ORDER BY post_likes DESC LIMIT 10',
+          [userId, queryResult.rows.map(entry => (entry = entry.post_id))]
         )
       )
       .then(queryResult => queryResult.rows);
 
     const notLikedUserPosts = await query(
-      'SELECT p.*, l.*, u.user_name FROM posts p FULL OUTER JOIN post_likes l ON p.post_id=l.post_id INNER JOIN users u ON p.post_author=u.user_id WHERE l.user_id IS NULL AND post_author=$1',
+      'SELECT p.*, l.*, u.user_name, EXISTS(SELECT FROM post_likes l WHERE l.post_id=p.post_id AND l.user_id=$1) as is_liked FROM posts p FULL OUTER JOIN post_likes l ON p.post_id=l.post_id INNER JOIN users u ON p.post_author=u.user_id WHERE l.user_id IS NULL AND post_author=$1',
       [userId]
     ).then(query => query.rows);
 
@@ -163,6 +160,11 @@ const allPostsHandler = async (req, res) => {
       })
     );
   } else {
+    const { rows } = await query(
+      'SELECT p.*, u.user_name, EXISTS(SELECT FROM post_likes l WHERE p.post_id=l.post_id AND l.user_id=$1) as is_liked FROM posts p INNER JOIN users u ON p.post_author=u.user_id',
+      [userId]
+    );
+
     await addPostsImages(rows);
     res.writeHead(200, { 'Content-type': 'application/json' });
     res.end(JSON.stringify({ posts: rows }));
@@ -171,7 +173,11 @@ const allPostsHandler = async (req, res) => {
 
 const postHandler = async (req, res) => {
   const { id } = req.params;
-  const { rows } = await query('SELECT p.*, u.user_name FROM posts p INNER JOIN users u ON p.post_author=u.user_id WHERE post_id=$1', [id]);
+  const { userId } = req.session;
+  const { rows } = await query(
+    'SELECT p.*, u.user_name, EXISTS(SELECT FROM post_likes l WHERE l.post_id=p.post_id AND l.user_id=$1) as is_liked FROM posts p INNER JOIN users u ON p.post_author=u.user_id WHERE post_id=$2',
+    [userId, id]
+  );
   const post = rows.length === 1;
 
   if (post) {

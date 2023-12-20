@@ -9,6 +9,14 @@ let postId;
 let imagePostId;
 let imageId;
 
+const expectedPostStructure = {
+  user_name: expect.any(String),
+  post_id: expect.any(Number),
+  post_body: expect.any(String),
+  is_liked: expect.any(Boolean),
+  post_author: expect.any(Number),
+};
+
 afterAll(async () => {
   const user = await loggedUser();
   await user.delete(`/posts/${imagePostId}`).expect(204);
@@ -30,7 +38,7 @@ describe("POST '/posts'", () => {
       .expect(201)
       .then(async res => {
         const body = JSON.parse(res.text);
-        expect(body.post_body).toBe(testContent);
+        expect(body).toEqual(expect.objectContaining(expectedPostStructure));
 
         postId = body.post_id;
       });
@@ -68,7 +76,7 @@ describe("GET '/posts'", () => {
     await request(app).get('/posts').expect(401);
   });
 
-  it('Should get all posts, with usernames', async () => {
+  it('Should get all {posts : {post_id: number, user_name: string, post_body: string, post_id: number, post_author: number, is_liked: boolean}[]}', async () => {
     const user = await loggedUser();
 
     await user
@@ -79,7 +87,10 @@ describe("GET '/posts'", () => {
         expect(body.posts.length).toBeGreaterThanOrEqual(1);
         expect(body.posts).toEqual(
           expect.arrayContaining([
-            expect.objectContaining({ user_name: expect.any(String) }),
+            expect.objectContaining(
+
+              expectedPostStructure
+            )
           ])
         );
       });
@@ -97,7 +108,7 @@ describe("GET '/posts/:id'", () => {
     await user.get('/posts/001').expect(404);
   });
 
-  test("Get '/posts/1' should respond with a post with username", async () => {
+  test("Get '/posts/1' should respond with {post_id: number, user_name: string, post_body: string, post_id: number, post_author: number, is_liked: boolean}", async () => {
     const user = await loggedUser();
 
     await user
@@ -106,8 +117,7 @@ describe("GET '/posts/:id'", () => {
       .then(res => {
         const { body } = res;
 
-        expect(body.user_name).toBeDefined();
-        expect(body.post_id).toBeTruthy();
+        expect(body).toEqual(expect.objectContaining(expectedPostStructure));
       });
   });
 
@@ -235,7 +245,7 @@ describe("Post's Likes", () => {
 });
 
 describe('Order followed user posts (principal page)', () => {
-  it('Should return posts created by the users whose USER follows, ordered by likes, with usernames', async () => {
+  it('Should return {posts: {post_id: number, user_name: string, post_body: string, post_id: number, post_author: number, is_liked: boolean, likes: number}[]}', async () => {
     const postsUsername = 'postuser123';
     const likesUsername = 'likes1';
     const secondLikeUsername = 'likes2';
@@ -361,6 +371,15 @@ describe('Order followed user posts (principal page)', () => {
         expect(body.posts[2].post_body).toBe(firstPost.rows[0].post_body);
         body.posts.forEach(post =>
           expect(post.post_body).not.toBe(notFollowedPostBody)
+        );
+
+        expect(body.posts).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              post_likes: expect.any(Number),
+              ...expectedPostStructure,
+            }),
+          ])
         );
       });
   }, 20000);
