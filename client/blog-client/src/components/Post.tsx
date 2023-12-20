@@ -2,18 +2,19 @@
 import Share from '../assets/share.svg?react';
 import Like from '../assets/heart.svg?react';
 import Comment from '../assets/comment.svg?react';
+import { MouseEvent } from 'react';
 
 interface Props {
-  onClickUsername: (e: any) => void;
-  onLike: (e: any) => void;
+  onClickUsername: (e: MouseEvent<any>) => void;
+  onLike: (e: MouseEvent<any>) => void;
   onPost: () => void;
   isLiked: boolean;
   likes: number;
   comments: number;
   shares: number;
-  onComment: (e: any) => void;
-  onShare: (e: any) => void;
-  onImage: (e: any) => void;
+  onComment: (e: MouseEvent<any>) => void;
+  onShare: (e: MouseEvent<any>) => void;
+  onImage: (e: MouseEvent<any>) => void;
   userName: string;
   userImage: string;
   postContent?: string;
@@ -43,6 +44,7 @@ function Post({
           src={userImage}
           alt='profile picture'
           className='object-center object-contain'
+          onClick={onClickUsername}
         />
       </div>
       <span
