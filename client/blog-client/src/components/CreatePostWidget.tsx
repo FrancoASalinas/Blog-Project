@@ -3,8 +3,13 @@ import cross from '../assets/Cross.svg';
 import ArgentinianButton from './ArgentinianButton';
 import { useEffect, useRef, useState } from 'react';
 import Loader from './Loader';
+import { Posts } from '../pages/Feed';
 
-function CreatePostWidget() {
+function CreatePostWidget({
+  successfullPost,
+}: {
+  successfullPost: (x: object) => void;
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [input, setInput] = useState('');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -45,7 +50,10 @@ function CreatePostWidget() {
       body: JSON.stringify({ content: input, image: imageSrc?.split(',')[1] }),
       credentials: 'include',
       headers: new Headers({ 'content-type': 'application/json' }),
-    });
+    })
+      .then(res => res.ok && res.json())
+      .then(data => successfullPost(data as Posts['posts'][0]))
+      .catch(err => console.log(err));
     setIsPosting(false);
     setImageSrc(null);
     setInput('');
@@ -82,7 +90,9 @@ function CreatePostWidget() {
           ) : (
             <ArgentinianButton
               text='Post'
-              disabled={input.length === 0 || imageSrc === null && input.length === 0}
+              disabled={
+                input.length === 0 || (imageSrc === null && input.length === 0)
+              }
               width={80}
               textSize='sm'
               p={1}

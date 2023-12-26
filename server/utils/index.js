@@ -81,4 +81,9 @@ module.exports = {
     }
     return false;
   },
+  getSinglePost: async (userId, postId) =>
+    await query(
+      'SELECT p.*, u.user_name, EXISTS(SELECT FROM post_likes l WHERE l.post_id=p.post_id AND l.user_id=$1) as is_liked FROM posts p INNER JOIN users u ON p.post_author=u.user_id, LATERAL(SELECT CAST(COUNT(*) AS INTEGER) FROM post_likes WHERE post_id=p.post_id) as post_likes WHERE post_id=$2',
+      [userId, postId]
+    ),
 };

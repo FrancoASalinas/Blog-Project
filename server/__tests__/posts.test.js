@@ -66,7 +66,7 @@ describe("POST '/posts'", () => {
         );
 
         expect(isImageId).toBe(true);
-        expect(body.post_image).toBe(encodedImage);
+        expect(body.post_image).toBe('data:image/png;base64,' + encodedImage);
       });
   });
 });
@@ -87,10 +87,7 @@ describe("GET '/posts'", () => {
         expect(body.posts.length).toBeGreaterThanOrEqual(1);
         expect(body.posts).toEqual(
           expect.arrayContaining([
-            expect.objectContaining(
-
-              expectedPostStructure
-            )
+            expect.objectContaining(expectedPostStructure),
           ])
         );
       });
@@ -129,7 +126,7 @@ describe("GET '/posts/:id'", () => {
       .expect(200)
       .then(res => {
         const body = JSON.parse(res.text);
-        expect(body.post_image).toBe(encodedImage);
+        expect(body.post_image).toBe('data:image/png;base64,' + encodedImage);
         imageId = body.post_imageid;
       });
   });

@@ -9,6 +9,7 @@ const {
   validateUsername,
   passwordIsConfirmed,
   isUserExist,
+  getSinglePost,
 } = require('./utils/index');
 
 const loginHandler = async (req, res) => {
@@ -174,10 +175,7 @@ const allPostsHandler = async (req, res) => {
 const postHandler = async (req, res) => {
   const { id } = req.params;
   const { userId } = req.session;
-  const { rows } = await query(
-    'SELECT p.*, u.user_name, EXISTS(SELECT FROM post_likes l WHERE l.post_id=p.post_id AND l.user_id=$1) as is_liked FROM posts p INNER JOIN users u ON p.post_author=u.user_id WHERE post_id=$2',
-    [userId, id]
-  );
+  const { rows } = await getSinglePost(userId, id);
   const post = rows.length === 1;
 
   if (post) {
@@ -185,7 +183,7 @@ const postHandler = async (req, res) => {
       const image = await fs.readFile(`./images/${rows[0].post_imageid}.jpg`, {
         encoding: 'base64',
       });
-      rows[0].post_image = image;
+      rows[0].post_image = 'data:image/png;base64,' + image;
     }
     res.writeHead(200, { 'Content-type': 'application/json' });
     res.end(JSON.stringify(rows[0]));
@@ -224,13 +222,15 @@ const createPostHandler = async (req, res) => {
         });
 
         const { rows } = await query(
-          'INSERT INTO posts(post_author, post_body, post_imageid) VALUES($1, $2, $3) RETURNING *',
+          'INSERT INTO posts(post_author, post_body, post_imageid) VALUES($1, $2, $3) RETURNING post_id',
           [userId, content, imageId]
+        ).then(
+          async query => await getSinglePost(userId, query.rows[0].post_id)
         );
 
         const postData = {
           ...rows[0],
-          post_image: image,
+          post_image: 'data:image/png;base64,' + image,
         };
 
         res.type('application/json');
@@ -241,9 +241,9 @@ const createPostHandler = async (req, res) => {
       }
     } else {
       const { rows } = await query(
-        'INSERT INTO posts(post_author, post_body) VALUES($1, $2) RETURNING *',
+        'INSERT INTO posts(post_author, post_body) VALUES($1, $2) RETURNING post_id',
         [userId, content]
-      );
+      ).then(async query => await getSinglePost(userId, query.rows[0].post_id));
 
       res.type('application/json');
       res.status(201);
